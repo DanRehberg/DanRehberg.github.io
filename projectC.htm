@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US">
 <head>
 	<title>Breadth of Programming</title>
@@ -8,7 +8,8 @@
 <body>
 	<header id="header">
 		<div class="content">
-			<h1>Dan Rehberg: Breadth of Programming</h1>
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: One Pass Mechanics</h1>
 		</div>
 	</header>
 	<section id="overview">
@@ -29,28 +30,30 @@
 				<a href="#">About</a>
 			</li>
 		</ul>
-		<h1>Project C</h1>
+		<!--h1>Project C</h1-->
 		</div>
 	</nav>
 	<div class="clear"></div>
 	
-
-	<section id="mainContent">
-		<div class="presentation">
-			<iframe src="https://drive.google.com/file/d/1QuWX9EILbQ-sH-ksM2S1XXcxF6ydKuoZ/preview" width="640" height="480"></iframe>
-			<p>Careful arrangements to collision systems can use position based corrections to remove intersections without needing to rely on impulse based dynamics.</p>
-		</div>
-	</section>
 	<aside id="sidebar">
-		<img src="profile.jpg" alt="Dan Rehberg">
-		<p>Authored by <strong>Dan Rehberg</strong></p>
+		<!--img src="profile.jpg" alt="Dan Rehberg"-->
+		<p>Contact constraints are a funny situation to deal with. Some aspects of simulations in computer science history relied on "discrete" solutions in which an intersection is solved only if an object is <strong>already penetrating another surface</strong>. This can cause issues if energy is supplemented in the system to force a separation of the two objects over time. "Continous" solutions counter this by attempting to examine the ongoing <strong>coherency of collisions over time</strong> while also attempting to gather intersection information <strong>leading up to an intersection</strong>. My solutions are somewhere in between, and feature <em>position projection</em> or <em>time of solving</em> depending on the situation. Yet, these solutions all attempt to <strong>force energy propagation in an ideal serial path</strong>.</p>
 		
 	</aside>
+	<section id="mainContent">
+		<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1QuWX9EILbQ-sH-ksM2S1XXcxF6ydKuoZ/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Careful arrangements to collision systems can allow position based corrections to remove intersections without needing to rely on impulse based dynamics. Temporal coherency is still worth heeding in these situations, but finding a stable contact set for a manifold to pass through a position constraint solver can enable stable stacking without keeping records of previous contact positions.</p>
+		</div>
+	</section>
 
 	<div class="clear"></div>
 
 	<footer id="footer">
-		<p>Copyright &copy;2020</p>
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
 	</footer>
 </body>
 </html>
