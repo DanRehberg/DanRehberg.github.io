@@ -25,8 +25,22 @@ body
 #header
 {
 	background-image: linear-gradient(72deg, rgb(120, 150, 120), rgb(50, 50, 50), rgb(20, 60, 20));
+}
+
+#header img
+{
+	border-radius: 75%;
+	border: 5px rgb(90, 90, 90) solid;
+	width: 86px;
+	display: block;
+	float: left;
+}
+
+#header h1
+{
 	color: #fff;
-	text-align: center;
+	padding-left: 120px;
+	padding-top: 15px;
 }
 
 #navigation
@@ -35,17 +49,16 @@ body
 	position: sticky;
 	top: 0px;
 	box-shadow: 8px 10px 5px rgb(100, 100, 100);
+	z-index: 15;
 }
 
 #navigation ul
 {
-	float: left;
 	padding: 0;	
 }
 
 #navigation h1
 {
-	float: right;
 	color: #111;
 }
 
@@ -98,15 +111,12 @@ body
 
 #mainContent
 {
-	margin-top: 20px;
-	margin-left: 10px;
-	float: left;
 	display: flex;
-	flex-wrap: wrap;
+	padding: 3em 5%;
 	flex-direction: row;
-	align-items: stretch;
-	justify-content: space-between;
-	width: 75%;
+	float: left;
+	width: 60%;
+	flex-wrap: wrap;
 }
 
 .element
@@ -116,6 +126,8 @@ body
 	background-color: #fff;
 	box-shadow: 8px 10px 5px rgb(100, 100, 100);
 	border-radius: 5px;
+	margin-bottom: 4%;
+	margin-right: 3%;
 }
 
 .element img
@@ -133,6 +145,18 @@ body
 	filter: blur(3px);
 }
 
+.element a
+{
+	color: rgb(40, 80, 60);
+	text-decoration: none;
+}
+
+.element a:hover
+{
+	color: rgb(170, 170, 170);
+	text-decoration: underline;
+}
+
 .element h3
 {
 	
@@ -145,27 +169,102 @@ body
 .presentation
 {
 	width: 80%;
-	margin: 30px auto;
+	background: rgb(200, 200, 200);
+	font-size: 18px;
+	text-align: center;
+	border: 2px solid rgb(100, 100, 100);
+}
+
+
+.videoContainer
+{
+	background: rgb(0, 60, 0);
+	position: relative;
+	overflow: hidden;
+	width: 100%;
+	padding-top: 56.25%;
+}
+
+.videoContainer iframe
+{
+ 	position:absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+}
+
+#mainContentVertical
+{
+	margin-top: 20px;
+	margin-left: 5%;
+	float: left;
+	width: 60%;
+}
+
+.elementVertical
+{
+	width: 70%;
+	text-align: center;
+	background-color: #fff;
+	box-shadow: 8px 10px 5px rgb(100, 100, 100);
+	border-radius: 5px;
+}
+
+.elementVertical img
+{
+	width: 100%;
+	height: 40%;
+	display: block;
+	margin-left: auto;
+	margin-right:auto;
+	object-fit: cover;
+}
+
+.elementVertical img:hover
+{
+	filter: blur(3px);
+}
+
+.bulletinEntry
+{
+	float: left;
+	width: 90%;
+	border: 1px solid rgb(100, 100, 100);
+	padding: 20px;
+	margin-top: 15px;
+	box-sizing: border-box;
+	max-height: 20em;
+}
+
+.bulletinEntry img
+{
+	float: right;
+	max-height: 14em;
+	max-width: 14em;
 }
 
 #sidebar
 {
-	position:fixed;
+	border: 4px rgb(150, 150, 150) solid;
+	border-radius: 5px;
 	right: 0;
 	float: right;
-	width: 20%;
+	width: 25%;
 	min-width: 15em;
-	max-width: 25em;
 	background: #000;
 	color: #fff;
 	text-align: center;
 	padding: 20px 30px;
 	box-sizing: border-box;
 	margin-top: 20px;
-	margin-right: 10px;
+	margin-right: 5%;
 }
 
-#sidebar img
+/*#sidebar img
 {
 	border-radius: 75%;
 	border: 5px rgb(90, 90, 90) solid;
@@ -173,7 +272,7 @@ body
 	display: block;
 	margin-right: auto;
 	margin-left: auto;
-}
+}*/
 
 #footer
 {
@@ -186,21 +285,42 @@ body
 	margin-top: calc(100vh - 94px);
 }
 
-@media(max-width:730px)
+@media(max-width:1050px)
 {
 	#mainContent
 	{
-		display: block;
-		float:none;
-	}
-	#element
-	{
+		flex-direction: column;
 		width: 100%;
+		margin-right: 5%;
+		margin-left: 5%;
+		float: none;
+	}
+	.element
+	{
+		width: 80%;
 	}
 	#sidebar
 	{
+		width: 90%;
 		margin: 30px auto;
 		float:none;
+	}
+	#mainContentVertical
+	{
+		width: 100%;
+		margin-right: 5%;
+		margin-left: 5%;
+		float: none;
+	}
+	.bulletinEntry
+	{
+		max-height: 40em;
+		padding-bottom: 1em;
+	}
+	.bulletinEntry img
+	{
+		max-height: 12em;
+		max-width: 12em;
 	}
 	#header
 	{
