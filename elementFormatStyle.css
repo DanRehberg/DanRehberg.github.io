@@ -197,6 +197,114 @@ body
 	border: none;
 }
 
+.videoContainer img
+{
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.projectLink .description
+{
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	display: none;
+	color: #fff;
+	text-decoration: none;
+	font-size: 1.2vw;
+	line-height: 1.4em;
+}
+
+.projectLink:hover .description
+{
+	display: block;
+}
+
+.projectLink:hover img
+{
+	filter: brightness(20%)
+}
+
+.writeup
+{
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+	color: #000;
+	font-family: Arial, Helvetica, sans-serif;
+	line-height: 1.4em;
+}
+
+.writeup h2
+{
+	text-align: center;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.writeup h3
+{
+	text-align: center;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.writeup pre
+{
+	white-space: pre-wrap;
+	font-family: Arial, Helvetica, sans-serif;
+	line-height: 1.6em;
+	font-size: 14px;
+}
+
+.figure
+{
+	background: rgb(200, 200, 200);
+	font-size: 14px;
+	text-align: center;
+	border: 2px solid rgb(100, 100, 100);
+	width: 70%;
+	max-width: 468px;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 2.0vh;
+}
+
+.figure img
+{
+	width: 100%;
+	height: auto;
+}
+
+.code
+{
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+	background: #fff;
+	border: 2px solid rgb(100, 100, 100);
+	padding-left: 0.5em;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-size: 14px;
+}
+.code h3
+{
+	text-align: center;
+	margin-top: 0.2em;
+}
+.code ul
+{
+	padding: 0px;
+	list-style: decimal inside;
+}
+
+.code li
+{
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+	border-bottom: dashed 1px #000;
+}
+
 #mainContentVertical
 {
 	margin-top: 20px;
@@ -264,16 +372,6 @@ body
 	margin-right: 5%;
 }
 
-/*#sidebar img
-{
-	border-radius: 75%;
-	border: 5px rgb(90, 90, 90) solid;
-	width: 50%;
-	display: block;
-	margin-right: auto;
-	margin-left: auto;
-}*/
-
 #footer
 {
 	position: relative;
@@ -298,6 +396,11 @@ body
 	.element
 	{
 		width: 80%;
+	}
+	.projectLink .description
+	{
+		font-size: 2vw;
+		line-height: 1.4em;
 	}
 	#sidebar
 	{
