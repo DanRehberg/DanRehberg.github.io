@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Parallelism</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="dataPoints.png" alt="Particle Rendering">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>With core growth occurring in consumer CPUs, a thread dispatch system designed for CPU architecture has the potential to be scalable for later hardware incorporating more cores and threads. This growth has been recognized in the massively parallel environments of the GPU space where work has outlined best approaches for dispatch and scheduling of general-purpose compute programs based on GPU architecture. This project incorporates a few tests to verify practices for hardware design when making a thread dispatcher. Because of the flexibility of a user defined CPU based thread system, a future goal is proposed to promote an idea of automated profiling of software during compilation or precompiler stages to ensure cache coherency is present for single or concurrent CPU based job scheduling.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Comparing CPU and GPU Architecture for Parallel Work Dispatch</h2>
+			<pre><h2>Summary</h2>
+A custom model of a parallel CPU based dispatch system is explored. The system designed is an attempt to utilize the caching characteristics of a CPU to make sharing data – such as instruction sets, or adjacent array elements – prevent an excess of memory reads. This model is meant to emulate SIMD behavior of graphics hardware as this has been an ongoing model of parallel workflow. The tests provided indicate how each system behaves differently given a particular job to perform in parallel over a constant dataset. The tests indicate this CPU model has a similar pattern of performance to the GPU dispatches, but further examination should be made to predicatively profile how to organize or parameterize parallel CPU workloads when emulating SIMD as a massively parallel environment structure.
+			</pre>
+			<pre><h2>Introduction</h2>
+Parallelism has been a growing trend in computer architecture for some time. In particular, the consumer model of parallel hardware seemingly boomed with the advancement of graphics cards (GPU) in the mid-2000s. While core counts also increased within central processors (CPU), the increase in overall core and thread counts for a CPU did not continue to grow in most consumer hardware until approximately 10 years following the emergence of available general-purpose computing on consumer GPUs (GPGPU). With the delay in CPU thread count increases, scalable performance was primarily limited to core frequency increases aside from novel changes such as increases in the number of calculations per clock cycle. Yet the availability of more cores in consumer chipsets offers a motivation to start writing scalable parallel software for dispatching threads on a CPU, requiring a meaningful way to diversify work on the CPU.
+
+The method chosen here is to dispatch common work equally to each available thread on the CPU rather than pushing separate types of tasks to each thread. The benefit expected in doing this is based on cache coherency potential available to the CPU. When reading from system memory, a consistent word length of data is pulled from the starting memory address where information was requested. This loading process can theoretically benefit the execution of compiled code as the commands to run are stored in a contiguous manner. This data load is stored within shared levels of cache on the CPU – with varying sizes and speeds – which can result in good code branching performance from iterative loops and conditional jumps. This is because the statement to jump to is immutable and could still exist within the available cache from a previous system memory load – meaning less time waiting for additionally memory load requests.
+
+In contrast, a GPU does not have this same caching benefit as the architecture promotes a single input multiple data (SIMD) structure. SIMD uses a small shared cache for instructions to be stored on and has multiple arithmetic logic units (ALU) working on different datasets independently. GPGPU utilizes a behavior similar to SIMD called single instruction multiple thread (SIMT), which theoretically suffers more from variable code branching in each thread because thread sets – while doing work independently – are forced to work in a lock step on a series of program instructions within their thread set.
+
+Despite the difference in architecture, the structure of the custom parallel dispatch system presented here – for the CPU – is meant to emulate the behavior of SIMD. The SIMD system of graphics hardware is a working example of modern parallel workflow and is being considered an ideal parallel structure as a result. The hope of sharing a common job among CPU threads for N tasks is that the instruction set will be cached so that each thread can start a new task without having to pull the instructions from system memory again. Similarly, all data sets are stored in contiguous arrays and have the potential to be stored in cache as well – though some tests below remove this potential through excessive amounts of data. Hypothetically, this is expected to offer a similar pattern of performance between both the CPU and GPU, but with overall performance varying by thread work saturation.
+
+These tests are meant to compare the efficacy of this custom CPU thread dispatch system to the constrained architecture designed for GPGPU dispatches. Advantages to each architecture is meant to be observed within a few tests. This includes recording the outcome of SIMD to cache coherency behaviors of a GPU and CPU, respectively, as well as the type of work performed between each architecture – notably good code branching on a CPU but significantly better floating-point operations on a GPU. Results from these tests are meant to determine effective routes for profiling software scenarios to promote greater performance when utilizing a CPU for parallel workflow.
+
+The emulation of SIMD behavior described is primarily focused on having shared instruction sets for CPU threads loaded once in much the same way that an instruction set is loaded once into a set of threads on graphics hardware. Because of this, SIMT and SIMD are considered synonomous in regards to the CPU parallel environment emulation – despite having different definitions, the common structure is what is being referred to. CPUs can have SIMD intrinsic functionality built-in, but are not considered relevant to the scope of parallel dispatch work described here.
+			</pre>
+			<pre><h2>Materials</h2>
+C++ and CUDA were used throughout all of the trials. The software was run on an AMD Ryzen 3700x and a Nvidia RTX 2080 Super. The following convex polyhedra were used for Gilbert-Johnson-Keerthi (GJK) proximity tests: a cube of 8 vertices (Figure A); a convex hull encapsulating a mesh of Suzanne the monkey composed of 66 vertices (Figure B.0 and B.1); and a sphere which was composed of 242 vertices (Figure C). The GJK test is a minima algorithm that returns the shortest distance between convex polyhedra, and while reasonably fast relies on iterative behavior.
+			</pre>
+			<div class="figure">
+				<img src="cubeClip.png" alt="Cube">
+				<p><strong>Figure A</strong> Cube</p>
+			</div>
+			<div class="figure">
+				<img src="suzanneClip.png" alt="Suzanne the monkey">
+				<p><strong>Figure B.0</strong> Suzanne</p>
+			</div>
+			<div class="figure">
+				<img src="suzanneHullClip.png" alt="Convex Hull">
+				<p><strong>Figure B.1</strong> Suzanne's convex hull</p>
+			</div>
+			<div class="figure">
+				<img src="sphereClip.png" alt="Sphere">
+				<p><strong>Figure C</strong> Sphere of 242 vertices</p>
+			</div>
+			<pre><h2>Methods</h2>
+Times were calculated from the moment of dispatching a set of work to the work being completed but excluded the initialization time for each parallel environment. The time taken to setup each environment seemingly took milliseconds between getting CUDA ready and creating threads on the CPU; but focus was given to the time to dispatch and complete a series of tasks because once initialized several dispatches can take place during runtime without requiring the initial setup time to occur again. The CPU dispatch model was created for these tests and ensures threads are created once and sustained through the life of the program by keeping each thread in spinlock between work. Upon first running a CUDA kernel after a system boot, an increase in time was apparent only in the first dispatch run. This was considered an aspect of initialization time and was excluded from trial results.
+
+Each test involved performing a specific job N times - described here as tasks. For each test, seven trials were performed to observe behavior after increasing the number of tasks. The tasks count started at 3 for the first trial and scaled by ten for each subsequent trial concluding at a final task count of 3 million. Each trial was performed 10 times within the same runtime execution, the results of which were averaged. Each test was designed to be embarrassingly parallel so that threads could work independently without worrying about race conditions affecting results from a dispatch.
+
+A baseline of dispatch performance was gathered by first running the GPU and CPU thread systems through a simple workload of two data type casts and a single integer modulus operation.</pre>
+
+			<div class="code">
+				<h3>Job 1: Casts and Modulus</h3>
+				<ul>
+				<li>i := nth task</li>
+				<li>count := number of tasks divisions</li>
+				<li>Return 2048.0 * (float)((int)(count)%(i + 1));</li>
+				</ul>
+			</div>
+			<pre>An additional test was run for the CPU doing no actual work, but still being forced to dispatch threads to the task count of each trial.
+
+Three GJK tests were performed using a pair of each polyhedra provided, with each test going through the same seven trials of job sets to observe the variance in performance by the number of tasks to complete. An additional test was included to see how long it would take to do each GJK test using a single thread to observe serial execution costs.</pre>
+			<div class="code">
+				<h3>Job 2: GJK</h3>
+				<ul>
+				<li>dir := <5.0, 2.0, 3.0></li>
+				<li>gather support points</li>
+				<li>add Minkowski difference to simplex</li>
+				<li>dir := closest point from simplex to origin</li>
+				<li>gather support points</li>
+				<li>add Minkowski difference to simplex</li>
+				<li>dir := closest point from simplex to origin</li>
+				<li>prevDir := dir</li>
+				<li>while distance not found</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if dir is <0, 0, 0> then quit
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if simplex is 2D OR 3D</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;gather support points</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if support points already in simplex then quit</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else add Minkowski difference to simplex</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if simplex is 3D then reduce simplex</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;dir := closest point from simplex to origin</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if magnitude of dir is greater than magnitude of prevDir then quit</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;else prevDir := dir</li>
+				<li>end while</li>
+				</ul>
+			</div>
+
+			<pre>The basic structure of the GJK algorithm is to have each polyhedra search for vertices in the direction of the other polyhedra. These vertices are subtracted from one another to produce a figurative hull/perimeter in a configuration space. This process is the <strong>complement</strong> of Minkowski addition, and because this is a difference of positions if the origin in the configuration space is within the new shape, then the two polyhedra are intersecting. Otherwise, the shortest distance between the polyhedra is the same as the shortest distance from the origin to the Minkowski difference defined hull in configuration space. The algorithm avoids explicitly making a new convex hull by searching for vertices in each polyhedra optimally and only testing simplexes [0D, 3D] within the configuration space.
+
+The complexity of the GJK algorithm grows based on the search for vertices within a support mapping function. Without optimizations increasing the number of vertices to search through increases the time spent in a single GJK iteration.</pre>
+			<div class="code">
+				<h3>Support Mapping</h3>
+				<ul>
+				<li>dir := input direction</li>
+				<li>mag := -(MAX VALUE)</li>
+				<li>id := 0</li>
+				<li>for i in vertices</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if dot(vertex[i], dir) &gt; mag</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;then mag := dot(vertex[i], dir) and id = i</li>
+				<li>end for</li> 
+				<li>Return id</li>
+				</ul>
+			</div>
+
+
+			<pre>The GJK tests utilized a common translation vector to separate each pair of polyhedra. The translation vector was precalculated for the count of tasks in each trial and stored in an array for lookup by using the <em>nth</em> task as an index. The translation vector for each index is equivalent to <strong>&lt5.0 - (float)(i), 0.0, 0.0&gt</strong> where <em>i</em> represents the <em>nth</em> element of N tasks.
+
+A hill climb optimization was included in CPU tests to see how performance varies when reducing the complexity of GJK for high density meshes with large task counts. This optimization was also applied to GPU tests to see which system had better performance gains with fewer iteration based code branching occurrences.</pre>
+			<div class="code">
+				<h3>Support Mapping with Hill Climb</h3>
+				<ul>
+				<li>dir := input direction</li>
+				<li>mag := -(MAX VALUE)</li>
+				<li>eMag := -(MAX VALUE)</li>
+				<li>id := 0</li>
+				<li>curID := input index</li>
+				<li>end := false</li>
+				<li>while end is false</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;for i in edgeCount[curID]</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if dot(vertex[edges[curID][i], dir) &gt; eMag</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;then eMag := dot(vertex[curID][i], dir) and id := edges[curID][i]i</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;end for</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if eMag &gt; mag</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;then curID := id and mag := eMag</li>
+				<li>end while</li>
+				<li>Return id</li>
+				</ul>
+			</div>
+
+			<pre>The C++ compiler optimizations were turned off. The results of the CUDA kernel were stored in an array to ensure the instructions in the kernel were always executed, but no flags were altered in the CUDA code generation. No warm-starting was used for the GJK executions, and only one object was transformed between the pair of polyhedra passed into the GJK function.
+			</pre>
+			<pre><h2>Results</h2>
+Figure 1 indicates the system that took the most time to execute during each trial over shared and normalized time. These systems were three separate tests of parallel dispatched work, two of which were on the CPU and one on the GPU - using <strong>Job 1</strong> on the CPU and GPU and <strong>No Work</strong> as the second CPU test. A positive correlation is shown between the increase in N tasks and the parallelized modulus work dispatched on the CPU. This CPU based dispatch, <strong>Job 1</strong>, occupied more of the shared normalized execution time when given more tasks to perform. Conversely a negative correlation between N tasks and the occupied time for GPU dispatches was apparent within the same modulus work over the shared normalized time. However, the set of <strong>No Work</strong> tasks on the CPU revealed neutral occupancy of the shared normalized time charts, indicating the percentage of total time spent remained relatively low when the CPU merely dispatched N tasks to its threads with no substantial work to perform. Figure 2 illustrates this relationship by showing linear growth in time expense – for execution as N tasks increases – occurred sooner for the CPU threads given <strong>Job 1</strong> tasks despite the <strong>No Work</strong> CPU dispatch eventually indicating linear growth as well.</pre>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure1.png" alt="Chart of Occupancy for System using Normalized Shared Time">
+				<p><strong>Figure 1</strong> System Occupancy, Shared Normalized Time</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure2.png" alt="Chart of Time in Microseconds for each System to Execute">
+				<p><strong>Figure 2</strong> Time Spent for N Mod Operations and N NULL Operations</p>
+			</div>
+			<pre><strong>All the tests indicate linear growth for parallel CPU dispatches after reaching a threshold of N tasks.</strong> The tasks before the threshold appeared to be more aligned with constant time or exponential time behavior, but more tests at lower N counts would need to occur to verify this. After the threshold, the growth in execution time in all trials resulted in data that indicated a linear relationship between thread execution times and the growth in tasks. The results suggest that this linear relationship was about 1:1 between the increase in N and the execution time of the CPU dispatch. <strong>An association was present between the complexity of the work and when a count of tasks revealed a threshold.</strong> Additionally, the increase in floating point operations on the CPU was accompanied by worse performance – contrary to sustained performance for larger N tasks on the GPU.</pre>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure3A.png" alt="Chart of Occupancy for System using Normalized Shared Time">
+				<p><strong>Figure 3A</strong> System Occupancy, Shared Normalized Time</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure3B.png" alt="Chart of Time in Microseconds for each System to Execute">
+				<p><strong>Figure 3B</strong> Time Spent for N Mod Operations and N NULL Operations</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure4A.png" alt="Chart of Occupancy for System using Normalized Shared Time">
+				<p><strong>Figure 4A</strong> System Occupancy, Shared Normalized Time</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure4B.png" alt="Chart of Time in Microseconds for each System to Execute">
+				<p><strong>Figure 4B</strong> Time Spent for N Mod Operations and N NULL Operations</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure5A.png" alt="Chart of Occupancy for System using Normalized Shared Time">
+				<p><strong>Figure 5A</strong> System Occupancy, Shared Normalized Time</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure5B.png" alt="Chart of Time in Microseconds for each System to Execute">
+				<p><strong>Figure 5B</strong> Time Spent for N Mod Operations and N NULL Operations</p>
+			</div>
+			<pre>Increasing the mesh complexity for the GJK trials was associated with longer execution times on the GPU. This result was shared with the CPU performance as well, but more time spent on the GPU helped indicate when the growth in execution times occurred for the GPU. <strong>The GPU displayed a similar pattern of reaching a work threshold, leading to linear growth in execution times and is displayed in Figure 6.</strong> After a threshold of tasks were dispatched, a linear association was present as the GPU started executing larger sets of tasks. This positive correlation in execution time and N tasks was similar to the CPU variant wherein it was approximately a 1:1 relationship between task growth and time execution growth. Three additional trials were added to verify the linear trend: 30 million tasks, 300 million tasks, and 400 million tasks.</pre>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure6.png" alt="Chart Showing GPU GJK Execution Threshold">
+				<p><strong>Figure 6</strong> GPU Based GJK Tests with Sphere and Apparent Threshold</p>
+			</div>
+
+			<pre>The iterative and conditional behavior seen from hill climbing optimizations took a third of the time for the sphere to sphere GJK proximity test on the CPU and varied between taking a third to a fifth of the time on the GPU. Figure 7 shows the CPU association between optimal graph traversal (fewer iterations over vertices) as having a negative correlation with time spent during execution – a positive correlation with performance. Figure 8 shows the tasks count which displayed similar performance between the non-optimized GPU GJK dispatch and the optimized CPU dispatch for larger N tasks – indicating a greater count of tasks where the CPU was still comparable to GPU performance. However, <strong>the hill climb optimization applied to the GPU dispatch resulted in greater deltas to performance over the CPU tests.</strong> These results, in Figure 9, showed a negative correlation between the number of iterations that occurred in the support mapping function and the time spent during execution.
+			</pre>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure7.png" alt="Chart Comparing CPU Hill Climb and No Hill Climb in GJK">
+				<p><strong>Figure 7</strong> CPU with Hill Climb and No Hill Climb</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure8.png" alt="Chart Comparing CPU Hill Climb to GPU with No Hill Climb in GJK">
+				<p><strong>Figure 8</strong> GPU No Hill Climb and CPU Hill Climb</p>
+			</div>
+			<div class="figure">
+				<img src="gjkCPU_GPUTrials/figure9.png" alt="Chart Comparing GPU Hill Climb and No Hill Climb in GJK">
+				<p><strong>Figure 9</strong> GPU with Hill Climb and No Hill Climb</p>
+			</div>
+			<pre><h2>Discussion</h2>
+Figure 6 indicates the consistency of GPU executions caused by the SIMT model when N tasks appears to be below full saturation of the GPU. This effect can be seen in the GJK figures wherein performance did not change significantly until moving from thirty thousand tasks to three hundred thousand tasks. As a consequence, the scheduler is likely waiting to dispatch remaining tasks as warps become available. This behavior is seen sooner within the CPU parallel system and is likely a result of having fewer threads. The effect of linear growth in both systems is the result of each task appearing to run in almost constant time but needing to do more tasks than can be handled by a count of available threads. Analogous to waiting for a free warp to send pending tasks to, the CPU threads each hold a pool of pending tasks to accomplish one after the other. This makes over saturation in a parallel environment exemplify the serial pattern in scheduling a large set of similar tasks.
+
+Before averaging the dispatch times, the CPU based dispatch shows slightly longer execution times from the first dispatch in the set of ten samples per trial. Given the high-level cache shared between threads, this initial run might elicit better performance on subsequent runs given the coherency of the cached data from the first dispatch. Furthermore, Figure 1 and 2 indicate that the general behavior of looping over a dataset has a degree of influence over performance, but that the CPU threads are rather good at iterating by outperforming the GPU dispatch times in most scenarios and almost matching it at 3 million tasks when performing the <strong>No Work</strong> job across all tasks. However, <strong>these figures still indicate that once complexity is added to the work, the immense volume of threads appears to favor GPU executions at large tasks counts – even if the job being performed is not ideal for the graphics hardware.</strong>
+
+<strong>The GJK trials help indicate that a threshold exists for both the CPU and GPU parallel dispatches which is based on the number of tasks being worked on as well as the complexity of the task.</strong> While increasing the number of tasks to accomplish causes a threshold to eventually reveal itself, the complexity of the job influences how quickly this threshold appears. So, rather than observing a threshold at a consistent number of tasks, the complexity of the task is also a variable to consider. This behavior is revealed from the tests provided but could be caused by several memory loads on the GPU and even on the CPU (CPU for large task counts), but the increase in floating point operations is enough to hinder the execution time on the CPU compared to the GPU. This floating point hinderance was observed in a few tests where an unnecessary translation transform was used in the support mapping function – having negligible impact on the GPU but worsening CPU dispatch times. For the hardware used, caching might start to fail at large tasks if relying on independent memory accesses for each of the N tasks run. Specifically, in the tests provided, at 3 million translation vectors for each GJK execution about 275 MB of data is needed to store each of the triple vectors. Though, the caching behavior is somewhat hidden and might successfully retain instruction data despite needing unique reads within that instruction set.
+
+The influence of work complexity and number of times to perform this work brings about a threshold, and as a result the time spent during execution begins to follow a linear scale. The scale is about 1:1 between the N tasks to work on but in practice appears to induce a slightly larger scale for CPU execution time and slightly lower for GPU execution time. This is consistent with larger thread dispatch possible on the GPU given threads in sets of warps being filled at once – the effect appearing to favor the GPU even when predictable linear scaling starts to occur.
+
+The hill climbing optimization removes the explicit need to search over every vertex within a mesh which necessarily reduces the total number of code branches occurring from iterations. The gains during runtime have greater performance deltas for the GPU when compared to the CPU. This outcome coincides with the theoretical difficulty in code branching on the fixed SIMD and SIMT structure of execution on a GPU. As shown from Figures 1 and 2, the CPU is less affected from just needing to branch during an iterative loop and as a result has smaller delta gains in performance when reducing the number of iterations within a task.</pre>
+			<pre><h3>Error</h3>
+The GJK algorithm used suffers the conventional floating-point errors that are prevalent for polyhedra that are extremely close together. Failing conditions were not tested for and instead the algorithm implemented is conservatively favoring intersection cases. Despite this, only one scenario in the set of translation vectors would cause an overlap to occur. Adjacent translation vectors are far enough away to prevent extremely close proximities. To avoid epsilon error range checking, a signed distance GJK variant could have been used, but was unnecessary within the test parameters during these trials.
+
+The CUDA kernel is expected to be inlining code to execute. This behavior was expected and so the larger function calls within GJK were forcibly inlined in the C++ code as well. Despite this, smaller tasks were not inlined in the CPU based program and should not have been inlined by the compiler as all compiler based optimizations were turned off. Inlining every function call might affect performance on the CPU, as might allowing general compiler optimizations.
+
+All programs were run from a release executable to avoid the overhead of a debugger collecting information during runtime. Notably, the spinlock method to control worker threads in the CPU model was less stable within a debug environment compared to putting threads to sleep with wake conditions invoked by the parent thread. However, in the release executable the spinlock method was faster than the sleeping method and was as stable. However, if more threads are created than supported by the hardware, performance can degrade if the operating system constantly promotes context switching to the threads in spinlock. Furthermore, some work scenarios might favor a thread count greater than what is supported by hardware when controlling threads with sleep and wake conditions. This model of CPU thread dispatches indicated this in older Intel hardware but was not the case in the trials using the Ryzen 3700x.
+
+The automated scheduling handled by CUDA had unexpected results. A case of this was seeing improvements in GJK performance when running the support mapping function that translated each vertex during the maxima search. This adds work to the system and demonstrates that changing a few things within a CUDA kernel might yield significant ramifications in how work is scheduled and operated upon.
+
+CUDA additionally compiles in two stages. The first compilation is into an assembly styled format called parallel thread execution (PTX). However, the second compilation follows a just-in-time (JIT) model thereby requiring the code to be compiled at runtime. This will mean performance can vary based on driver implementations and even hardware used. After an initial runtime compilation, the JIT machine code can be cached (according to CUDA documentation) to prevent the need to recompile again. As it stands, any extra time presented from CUDA was ignored in the times collected for these tests as the primary focus was on dispatching and completing tasks in a parallel environment. If caching the machine code does not occur, then this is considered an additional cost to time in the dispatch and execution of tasks.
+			</pre>
+			<pre><h3>Future</h3>
+The design of the CPU system accounts for the shared caching capability of the CPU and so the execution model forces all threads to work on a common task using different data in an attempt to mimic SIMD/SIMT behavior. These initial tests suggest that this CPU model of execution implemented is similar to the shared instruction dispatch of the GPU – as seen before and after a threshold of tasks in the figures. While the GPU model forces the instruction set to exist for the lifespan of that groups' work, CPU data caching is not necessarily controlled by a programmer and shared instructions or data may be replaced from caches during runtime. This is one aspect where profiling hardware further might indicate patterns to follow if using a parallel dispatch system on a CPU meant to emulate shared instruction in SIMD/SIMT behavior.
+
+In some cases, it might be obvious to have a symbiotic relationship between CPU and GPU parallel dispatches. For instance, the support mapping function used in GJK can be an embarrassingly parallel problem. However, strict parameters and advantages at present indicate some workloads will perform faster on the CPU without any symbiotic relationship. Further exploration of the CPU parallel dispatch system – especially given the core/thread scalable potential in the current marketplace – should be a priority to ensure algorithms or procedures that do not need to be exclusively serial can competently be executed on a CPU in parallel with scalable performance. The parallel model used here should warrant further investigation to determine effective means to profile software such that combinations of parallel workloads can be scheduled to exploit characteristics of CPU caching.
+			</pre>
+			<pre><h2>Conclusion</h2>
+The parallel dispatch system tested for scalable parallelism on a CPU indicated similar behavior to parallel dispatches on the GPU. This model suggests that a comparable dispatch system can exist within CPUs and should have scalability if run on similar CPUs with different core and thread counts. The caching available to the CPU seemed to benefit the performance of iterative behavior but given complex work at high volumes modern GPUs still outshine CPU performance given a significantly larger set of threads to dispatch. Additionally, reducing the number of iterations performed benefitted GPU performance more likely due to worse code branching behavior within the graphics hardware. Knowing the two variables that seemingly describe when a threshold appears, inductive analysis based on the complexity of the job and the number of tasks given to a CPU thread could enable predictive performance when utilizing a CPU parallel environment. Automated testing and machine learning could be built to empirically test for and then predict when thresholds might occur across specific hardware platforms. The importance of profiling the CPU work is based on the greater independence of a CPU thread – compared to the lock step in a warp. Applying the results of successful profiling could be done through metaprogramming implementations to achieve a goal of automating a scheduler to encourage optimal cache coherency scenarios between a known set of dispatch calls – assuming race conditions are accounted for.
+			</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>

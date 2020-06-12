@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Parallelism</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="dataPoints.png" alt="Particle Rendering">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>At present, some of the intimacy between software and hardware can be lost to programmers when given fewer considerations to make during the design process. For instance, having a surplus of system memory might remove concerns of code bloat and excessive instancing of objects - though embed systems still challenge design in part due to memory constraints. Parallel design requires some degree of hardware understanding in order to dispatch work in general-purpose compute programs; avoid race conditions; and to consider how data can be shared, cached, and reused because of hardware design. These projects consider some relatively low-level aspects of software to comfortably work in parallel environments.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="presentation">
+			<div class="videoContainer">
+				<a class="projectLink" href="gjkCPU_GPUTrials.htm">
+					<img src="suzanneHullClip.png" alt="Convex Hull">
+					<p class="description">With core growth occurring in consumer CPUs, a thread dispatch system designed for CPU architecture has the potential to be scalable for later hardware incorporating more cores and threads. This growth has been recognized in the massively parallel environments of the GPU space where work has outlined best approaches for dispatch and scheduling of general-purpose compute programs based on GPU architecture. This project incorporates a few tests to verify practices for hardware design when making a thread dispatcher. Because of the flexibility of a user defined CPU based thread system, a future goal is proposed to promote an idea of automated profiling of software during compilation or precompiler stages to ensure cache coherency is present for single or concurrent CPU based job scheduling.
+					</p>
+				</a>
+			</div>
+			<p>Comparing CPU and GPU Architecture for Parallel Work Dispatch</p>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
