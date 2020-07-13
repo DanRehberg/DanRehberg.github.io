@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="Java, Position Based Dyanmics">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Specialized Optimizations</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="codeBanner.png" alt="Lines of code">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>Java can be a useful environment to quickly prototype ideas, but to make simulations performant you might have to ignore some abstractions. This application is made in JavaFX for a general graphical user interface, but in setting up an environment to simulate <strong>position based dynamics</strong> JavaFX's set of classes were insufficient to obtaining a desired runtime performance. Some issues faced are preferential to my heavy use of C++ but the real downfall in following the JavaFX API wholeheartedly is losing time and control due to asynchronous event propagation and event handling.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1MJCNcaHIs_1lqZAgILoo5_oarKd-gdSS/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>PBD Implementation using JavaFX</p>
+		</div>
+		<div class="writeup">
+			<h2>Asynchronous Behavior in Java</h2>
+			<pre><h2>Building a Position Based Dynamic System in Java</h2>
+Java offers many simplifications which make rolling out new ideas quick and easy. While I am personally attached to lower-level software control, I found myself eager to use these simplifications to test a method of mechanical simulation I had wanted to play around with for a few years - <strong>position based dynamics</strong> (PBD). This project was a freebie at the end of a semester for a course (spring 2019) on Java programming. This course already introduced some graphical programming using JavaFX.
+
+The goal was simple, follow the excessive object-oriented paradigm (OOP) that Java presents to build abstract classes and interfaces to be specialized with classes that define geometry and constraints for PBD. <strong>The minimum requirements were to solve distance constraints for contact separation and to preserve the shape of a polygon while using Verlet integration</strong>, anything beyond this was considered a bonus accomplishment before the assignment was due. While I had my minimum goals to achieve, this project let me explore the verbose nuances of Java's OOP approach (compared to the likes of C++) ensuring more features could be incorporated in the future. Because of this, there are extra integration methods defined in an interface that can be overloaded, and more primitives and constraints can be added as desired.
+
+Getting up and running was fairly simple. I have graphics programming experience through the OpenGL API and was able to retain my focus on the PBD based code without the explicit need to manage a rendering context, memory, and shaders to properly display separate assets within the graphical user interface (GUI). As far as mechanics programming, I have gone through several different methods of simulating physical phenomena. Notably, it has all been based on rigid body dynamics of one form or another, but having read material for some time about PBD (from the work by Matthias Muller-Fischer) it seemed like implementing the basic idea with Verlet integration would be straightforward and easy to visually debug before validating numerical solutions. For the most part this was true, but performance issues started to occur based on treating media classes as a black box within JavaFX.
+
+That problem I faced seemed incredibly reminiscent of behavior I had observed in Action Script in the past. My previous experience had me aware that high level abstractions of interactive media content might result in unordered operations as events propagate into a list of handles to dispatch. While I am not looking behind the scenes to verify if the internal management is attempting to run things concurrently, the result of seeing asynchronous operations appears to provide some irregular stutter not unlike irregular frame times in a scenario where the frame rate is consistent – for instance, moments occurred which make me wonder if the visual element was updated in simulation but not rendered with updated coordinates for that frame. Not only that but the overall performance seemed unacceptable for the minimal amount of work that needed to occur between each update to the screen. While I was less particularly about how smooth the final project appeared – again it was a free assignment to perform in class – I am ever encouraged by the mantra of software engineering, “can we do better?”
+
+My solution in past uses of Action Script was extended to Java – no pun intended. An example I point to in Action Script is overcoming the brute force approach to render culling, or lack thereof (depending on versions of Action Script). Rather than letting the internal system attempt to draw everything within a scene, or to test every object serially for culling, I would force a scene graph to exist in an optimal place (a place that avoids too much performance decay or poor asynchronous behavior) that manually adds and removes the objects to render. Carrying this concept forward, I decide all interactions were going to be defined in a shared memory space and updated through a single handle function that was more guaranteed to run at a consistent rate – through an AnimationController. Running in the AnimationController instead of a more removed/abstracted class ensured that the call to the handler was significantly smoother than using some of the other class’s with interactive handles. Isolating every task to perform to a single handler function meant a logical order of work could exist to organize this system, a potential benefit to considered later extensions to the program such as parallel dispatch of each work group.
+
+The results in performance allowed the system to run well above 60 FPS, and in updates to Java now can run close to 200 fps on the same hardware. The program allows a user to observe what happens with complex shapes when modifying the iterative solver, but more important to my analysis in making the system run better was that even an unnecessarily large number of iterations (anything more than is needed to converge to a global solution) did not have the same detriment to performance as trying to utilize a more complicated JavaFX class for some rather straightforward event-driven programming.
+
+Of course, some abstract classes are still used in cases where strict logical control in a loop was not as important. Notably, the textboxes update at the behest of Java runtime management as well as the buttons. Though, it should be noted that in some situations it might still be important for a programmer to attempt to manually control some of those objects if their unique event handling needs require it. Consider for instance a situation where only one button needs to be clicked. It is possible (I managed to do it within an assignment of my Java class) to have two buttons clicked in such a way that their events are handled within the same step of executing propagated events. This was game breaking in an assignment to make a pair-matching memory style game using the classes provided in JavaFX, though not entirely likely for a user to accidentally make this occur.
+
+In any case, the moral of this story is that it can be important to roll out a custom solution to a problem if a given project requires it. This is not meant to encourage pre-optimizations but to recognize that <strong>abstract tools made for a programmer do not always have the one-size-fits-all solution that might seem promised</strong>. Every object has a (hopefully) well defined set of instructions that can work well in some situation over others. While I have found Java useful (thanks to using in in class) it fits a similar pattern of behavior to things like Action Script – from my perspective – in which the OOP paradigm is taking to such an extreme that aspects where functional and imperative paradigms could be more useful are seemingly removed as a primary choice from a programmer fixated on using the tools provided to them. If target goals are not being met, or a breaking feature is found using the tools already provide, then it might be warranted and in the interest of the programmer to determine what went wrong and how they can fix it. This should require building specialized solutions if need be.
+
+A repository with the – at present (July 13, 2020) – basic working code that I turned into class can be found <a href="https://github.com/DanRehberg/javaPositionBasedDynamics">here</a>. I will likely be adding to this in the future to offer other variations of numerical integration, energy transfer, and constraints.
+
+			</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
