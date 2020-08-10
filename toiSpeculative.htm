@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="Rigid body dynamics, Continuous Collision, Speculative Contacts">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Specialized Optimizations</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="codeBanner.png" alt="Lines of code">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>Careful arrangements to collision systems can allow position based corrections to remove intersections without needing to rely on a bias with impulse based dynamics. Temporal coherency is still worth heeding in these situations, but finding a stable contact set for a manifold to pass through a position constraint solver can enable stability without keeping strict records of previous contact positions.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1QuWX9EILbQ-sH-ksM2S1XXcxF6ydKuoZ/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Agressively Changing Contacts in a Dynamic Manifold</p>
+		</div>
+		<div class="writeup">
+			<h2>Non-Iterative Position Projection</h2>
+			<pre><h2>A Brief Description of Continuous Collisions</h2>
+
+Continuous collision detection has a useful quirk compared to discrete collision systems. Notably, contacts can be gathered incrementally over time. Contact points are usually gathered to build a larger surface area over the contacting facets between two shapes. By building this large surface area the impulses between contact points tend to level the center of mass (CoM) over time as a collision continues to occur. By comparison, discrete methods involve deciding that a collision has occurred and build a complete contact manifold in one step through various methods – such as testing clipped features between two shapes. The continuous collision method can get away with collecting one contact point at a time by exploiting a coherency that is likely to exist between colliding bodies – notably these bodies are unlikely to translate or reorient aggressively over time, meaning the previous contact point gathered is likely still involved in the next frame's collision.
+
+A discrete collision system is also likely to have similar coherency between contact points but tries to avoid any initial jitter when applying impulses between a pair of bodies by using an immediately stable contact manifold as soon as the collision occurs, changing as needed for each subsequent frame. With continuous collisions, there do exist means to avoid a few frames where a rigid body jitters after a collision, but an approach demonstrated in the video above was an attempt to take a speculative approach with continuous collision detection in order to provide position corrections as well. The goal of applying position correction was to further reduce jitter in a continuous system by not applying an additional bias to the impulse – added energy meant to force a separation between contact points. Moreover, this simulation does not use an iterative solver (e.g. Gauss-Seidel) and yields only one Lagrangian scalar per contact pair in each collision pass, without any warm starting from a previous frame’s solution.
+
+<h2>Speculative vs Continuous Collisions</h2>
+
+Gathering only one contact point at a time in a continuous collision system is useful because this means the narrow phase collision detection can be combined with adding a potential contact point into a new or existing contact manifold between a pair of objects. This avoids having to separate the contact gathering and narrow phase collision testing between two algorithms, instead using a single algorithm like Gilbert-Johnson-Keerthi (GJK), Minkowski Portal Refinement (MPR), or Voronoi Clip (V-Clip) to name a few. These algorithms can determine both a collision between two convex polyhedral while also finding a separation axis or the nearest points – shortest distance – between two objects. There are shortcomings with each of them, for example the original GJK algorithm only returns the shortest separating distance if and only if the objects are actually apart; but GJK becomes a practical algorithm for continuous collision detection as it incrementally builds contact points between objects at a location just before a collision. Gathering these near collisions can require things like a Time of Solver (ToI) which uses a root finding approach to determine the time at which two objects came into contact (typically within an additional distance margin to avoid floating point error).
+
+Speculative contacts are a simplified approach to gathering contact points in a continuous system. Essentially, if two objects are thought to collide after tentatively moving within a frame, then the contact points collected are from the locations and orientations of the objects before their tentative motion. When passing this information into an iterative solver, objects still might have a small jitter but will become stable over time and in some cases might offer greater stability faster in a globally correct solution – of many objects colliding with one another in a given frame. For instance, consider Newton’s cradle: if one ball is immediately adjacent to another, but was tentatively moving fast enough that a broad collision sweep determined it might collide with the second (not immediately adjacent) neighbor, then adding additional contact points with that second neighbor – not physically possible in our observed reality –  will ensure that the momentum transmitted will reach that second neighbor before entering a second pass in the iterative solver. However, there are downfalls with this system which become apparent with <strong>ghost collisions, a situation where a broad collision sweep gives a false positive and momentum is shared between objects that would not actually collide within the frame</strong>.
+
+Depending on the circumstances, the benefit of a single proximity query at the start of a frame – before tentative motion – can provide a reasonably plausible mechanics simulation; but in other cases repeating a few calls to a proximity function might help to narrow down whether a collision actually occurred. Both of these methods can be made to run optimally, but my interests led me to combining the use of both to project to a separation margin using a position constraint solver in an attempt to avoid requiring an addition of virtual energy into the impulse solver – a practice that helps ensure that an object’s velocity will force it to separate from another object over time. More specifically, the effectiveness of adding a bias to separate objects can require an iterative approach to solving constraints in a given frame – minimizing the corrective impulses with each iteration – to help an object reach noticeable stability as well as removing interpenetration before being rendered. This work was an attempt to avoid the use of an iterative solver and the addition of energy to resolve a contact constraint but sits among several different tests I have performed to determine the viability of one pass constraint solvers. Unique to these trials is the use of incorporating speculative contact gathering in situations where collision coherency is relevant – knowing a collision is continuing from a previous frame – to reduce the number of ToI tests that need to occur.
+
+<h2>Method</h2>
+
+The tools used were built in an abstract way to incorporate the storage of contact manifolds that could be used for discrete or continuous systems but were <strong>capped to storing a maximum of four contact points</strong> between each body in these trials. These contacts are also storing a unit vector in the normal direction of one of the bodies – designated as the reference object – but were forced to share a <strong>primary vector as an “ideal” vector due to the position corrections performed – notably this vector is parallel to a separating axis.</strong> 
+
+A Newton based root finding method was used to determine if a collision occurred and at what time it was considered to have occurred. The <strong>collision was considered if it fell within a predefined marginal distance</strong>. The proximity function used was GJK, but <strong>no reduced/scaled shapes were used to account for the marginal distance</strong> – a solution that is effective at ensuring GJK will likely be successful in the narrow phase collision tests to gather a contact point. Instead, the shapes rendered on screen were used as is in the Newton based ToI solver.
+<strong>The system followed an incremental gathering of contact points using the result from the ToI solver only on the first collision found, if the collision continued in subsequent frames then the next contact point added was gathered before tentative motion – i.e. subsequent collisions from a shared collision event gathered speculative contacts.</strong> This helped avoid ghost collisions from occurring while not having to consistently run the ToI system to avoid the iterative nature of solving a root finding problem. Previous contact points were liberally removed from an existing contact manifold if existing beyond the marginal distance that a contact point needed to be within to be considered a collision.
+
+Two constraint solvers were used in these collision tests: a position solver and velocity solver. The position solver uses the nearest contact point between the two shapes and ensures they are separated to the margin distance used in the narrow phase collision tests. The velocity solver applies an impulse once to each contact point in a given frame, using only the momentum between the objects that was present in the tentative motion of the frame – <strong>no biases (e.g. Baumgarte) were used.</strong> A bias was not required because the position constraint was being solved directly.
+
+No friction was applied in the velocity solver. Without friction falling objects were easier to observe tipping over the ground within the simulation space.
+
+The time step was not controlled in the simulation. A variable framerate was desired to determine how well the falling object would stabilize over several frames without the use of an iterative solver between frames. Adding a bias to resolve interpenetration at the velocity level requires control over the time step if the bias provided is constant. For the simplicity of this simulation, it seemed unwarranted to control the time step without this bias factor.
+
+<h2>Results</h2>
+
+The results showed promise in resolving position of a rigid body directly without observing an excessive amount of jitter. The application of a margin to project an object to helped ensure that proximity queries using GJK would not fail and so would not require an additional algorithm like Expanding Polytope Algorithm (EPA) or Separating Axis Theorem (SAT) to find a potential contact point. A potential problem avoided by using the speculative contacts for subsequent frames of ongoing collisions was in avoiding failures using GJK in the ToI solver from floating point error due to bisecting time in the root finding procedure or from testing distances where the objects are too close together.
+
+By not adding additional energy into the velocity constraints, the bodies were able to settle until their surfaces were reasonably parallel to one another after applying rotational impulses in the solver. The lack of iterations did not seem to include the jittery behavior associated with undampened continuous collisions or from directly correcting position violations.
+
+<h2>Error</h2>
+
+Some odd behavior was noticed when attempting to correct positions directly. In a few instances, the box falling over the side of the ground resulted in an abrupt displacement rather than a smooth transition. Hypothetically, a larger time step should not worsen this effect because time is not involved in the correction of positions between bodies within the frame – only the outstanding violation of positions between the bodies is solved for. This issue was likely present due to the method used for removing old contact points if outside of the marginal distance. Removing contact points was based on projecting the contacts along the separation vector – unit normal – from the reference object. However, because the normal vectors were heavily controlled in the simulation, several occurrences were present in which a new normal vector was not gathered when tipping over the available ground. This might be mitigated if contacts were thrown out of the manifold by their true separating distances rather than their distances relative to a normal favored for accurate position correction.
+
+The more obscure shape used never seemed to collect more than one contact point. This might be correct behavior for the present simulation but brings up questions of what might have occurred if friction was present in the simulation. In particular, the irregularity of small adjacent facets might cause jitter if the conditions that preserved an “ideal” normal vector between contact points did not also align with the desired resting state due to inertia.
+
+Time steps were not controlled for most of the trials, but this does not mean this implementation would work for all time invariance. Accelerations applied to mimic a gravitational pull were entirely integrated (with respect to time) into the falling objects’ velocity, and so in the case of an incredibly large time step an unrealistic amount of energy would be shared as an impulse transfer between colliding bodies. However, limiting the velocity gathered before a collision by altering how much acceleration occurred was not a priority of this simulation. Instead it was deemed useful to see if the system was performant enough to avoid the time step from becoming too large as it bijectively aligned with the time between frames observed. This fault is mentioned here to ensure that this particular system will be prone to showing some odd behavior depending on the circumstance with uncontrolled acceleration integration; but it will still catch and resolve collisions between bodies and not succumb to a “bullet through paper” problem.
+
+<h2>Conclusion</h2>
+
+A major goal in testing this combination of ToI solving for contact points and speculative contact gathering was to explore options when trying to reduce the number of tasks needed to resolve collisions between rigid bodies. While the simulation appears to work well, and might fit in particular environments without odd behavior, the resulting performance did not seem to substantially confirm that speculative contact gathering after an initial ToI case as being all that necessary for performant mechanics. The simulation appeared to perform comparable to the case of using just the ToI solver (more to share in later projects), which can have optimizations such as pushing the previous contact positions into a simplex to “warm start” GJK – a practice that helps result in near constant time performance in later executions of GJK. In fact, the result of thoroughly clamping the marginal distance in the ToI solver results in one execution of GJK before exiting which would be equivalent to one execution of GJK when gathering speculative contacts. The ToI solver would have the added benefit of suggesting the elapsed duration before the collision, which could assist in determining a more accurate impulse experienced between the bodies by reducing the amount of acceleration that was present due to gravity.
+
+While it might be the case that speculative contacts may not be entirely necessary to boost performance in a continuous collision system, the case of carefully determining how to project positions to remove contact violations seems to work without noticeable jitter. Further tests will need to be performed to determine how well this can stand up in other simulation scenarios, and possibly if it can extend to other forms of constraints that are abstracted to the velocity solver as impulses.
+			</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
