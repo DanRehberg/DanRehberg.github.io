@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Parallelism</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="dataPoints.png" alt="Particle Rendering">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>One of the easier paths to get involved with working in parallel involves becoming familiar with embarrassingly parallel problems. These are situations where a set of work needs to be performed, where the set involves the same operations and can be done independently from other elements within the set. Understanding this behavior is a simple approach to avoiding memory collisions and race conditions that can plague improper parallel algorithms. Embarrassingly parallel problems are more straightforward, and slightly more complicated example is given here as well as a description of running two separate dispatches when a larger problem is not an embarrassingly parallel without being broken down first.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Embarrassingly Parallel Problems – Moving from Serial to Parallel</h2>
+			<pre><h2>Introduction</h2>
+Working on a problem recently reminded me that some situations can blatantly be an embarrassingly parallel problem. The purpose of this article is to take the problem I was working to demonstrate how it can be easy to spot if this is the case when working over an arbitrary set of data. As far as I know, the traditional “Hello World” of parallel programming is doing vector addition, and rightly so. Vector addition demonstrates an obvious case where parallelism works because it is an embarrassingly parallel problem. What this means is that each thread is working on an element of a set – in this case a component of an n-tuple – independently of the other threads and other components of the set. Of course, it is useful and quite simple to demonstrate this using vector addition. Given two tuples of identical cardinality, where n represents the cardinality, execute n threads which will each only access a single index using a convention of naming each thread a value ‘i’ in the set [0, n-1], such that thread i only accesses the ith index in the first, second, and resultant tuple – where the resultant tuple is the solution of the vector addition. Thread i will then read the ith index in the tuples given, add those two values, and then store those values in the ith index of a resulting tuple.
+			</pre>
+			<div class="figure">
+				<img src="chainingObjects/embarPara.png" alt="Embarrassingly Parallel Dispatch Shows Independent Work">
+				<p><strong>Figure A</strong> Independent Work</p>
+			</div>
+			<pre>
+Vector addition should clearly demonstrate a simple case of an embarrassingly parallel problem given the addition that occurs only depends on the ith component in each vector. However, this behavior of thread independent work can extend to more complex situations where a thread might still be accessing shared elements in a set. To determine if this is still an embarrassingly parallel problem, it is important to consider another factor – is the observed set being mutable? That is, is the set referenced by threads changing – causing problems if the result of a job relies on multiple elements from a set. If the set has non-mutable elements, then it might be the case that a problem fits in the category of embarrassingly parallel.
+			</pre>
+			<pre><h2>Finding a Parallel Work Path</h2>
+To demonstrate this, consider a solution I was implementing into a parallel pipeline for physics simulation. The physics system is solving a straightforward problem, to resolve mechanically based constraints over pairs of objects. However, to make the system of constraints being solved more optimal, it can be nice to “island” (or “chain”) constraints into an isolated system of constraints if possible. Islanding, or as I prefer to call it chaining, is demonstrated in the case of two stacks of boxes where each stack is far away from each other. Because each stack is isolated, the number of constraints per island is reduced if it is not including the constraints in the other island(s). Depending on how the constraints are being solved, the number of constraints in a system might be reduced thereby simplifying the complexity of that system. In the physics engine I am working on, these islands are being built exclusively for hard constraints where I always want to find a global solution per island. Because of this, I prefer to call these systems chains because chain links cannot be separated because they are interlocked with another link; and more than that, a visual representation can show exactly which links are interlocked with other links to demonstrate where hard constraints are present.
+			</pre>
+			<div class="figure">
+				<img src="chainingObjects/blocks.png" alt="Stack of Blocks">
+				<p><strong>Figure B</strong> Stacks of Blocks</p>
+			</div>
+			<pre><h2>Examine the Serial Algorithm</h2>
+A simple solution to this problem is to use a serial algorithm that loops over all of the objects interacting with other objects in the simulation and recursively going through all pairs of constraints that branch out from each object. Consider the following algorithm given a set of constraint pairs and a means to ensure that only one set of chain links is stored to be solved. Assume the chain link destination array is mutable in size in the pseudo-code below.</pre>
+			<div class="code">
+				<h3>Serial Chaining/Islanding Algorithm</h3>
+				<ul>
+				<li>output is chains[][] = {}</li>
+				<li>chain_index := 0</li>
+				<li>constraint_pairs[N][]</li>
+				<li>objects[N]</li>
+				<li>comparator[N]</li>
+				<li>for i is 0 to N-1</li>
+				<li>&nbsp;&nbsp;searched := false</li>
+				<li>&nbsp;&nbsp;list[] := {}</li>
+				<li>&nbsp;&nbsp;index := 0</li>
+				<li>&nbsp;&nbsp;append i in list</li>
+				<li>&nbsp;&nbsp;store := true</li>
+				<li>&nbsp;&nbsp;while searched is false</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;for j in constraint_pairs[list[index]]</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if object[list[index]] has mass AND constraint_pairs[list[index]][j] is not in list then append constraint_pairs[list[index]][j] in list</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;end for</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;index := index + 1</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;if index is greater than or equal to size of list then searched := true</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;eles if object[list[index]] has mass AND comparator[i] > comparator[list[index]] then store := false, searched := true</li>
+				<li>&nbsp;&nbsp;end while</li>
+				<li>&nbsp;&nbsp;if store is true then chains[chain_index] := list, chain_index := chain_index + 1</li>
+				<li>end for</li>
+				</ul>
+			</div>
+
+			<pre><h2>Interpret a Parallel Variant of a Serial Algorithm</h2>
+This algorithm essentially searches over disjointed constraints like a linked list, knowing which subsequent branches to possibly search by testing if a branch was already added into the list array. The list array is a potential chain link set to later use as a system of constraints to solve. Notably, the algorithm is only storing the chain link once by favoring an initial constraint index that is only linked to other constraint indices of larger values. That is, if the ith iteration is a value of 2 and it is found to link with constraint indices 3 and 4, then the list array generated during this iteration will be stored as a chain to later solve. However, when at the ith iteration with a value of 3, it will be found that 3 links with 2 which is smaller than 3 suggesting that this chain link has already been stored and the next iteration should begin. It is worth noting the condition added to determine if an object has mass. In simulations, a simple heuristic to use if there is an object of many orders of magnitude greater than all other objects is to assume that it will not be affected by the smaller objects interacting with it. By excluding it in the tests, separate sets of links which only connect to each other through an object of 0 mass (implying infinite mass) will be stored as separate chains to be solved independently of one another.</pre>
+			<div class="figure">
+				<img src="chainingObjects/oneChain.png" alt="All objects linked in one chain">
+				<p><strong>Figure C</strong> One Chain/Island between Shared Infinite Mass</p>
+			</div>
+			<div class="figure">
+				<img src="chainingObjects/twoChain.png" alt="Infinite masses break object chain links">
+				<p><strong>Figure D</strong> Two Chains/Islands between Shared Infinite Mass</p>
+			</div>
+			<pre>Notice the sets being looped over are not mutable, and instead the only thing changing is the output of chain link sets to use later. That is, this algorithm loops over known sets of pairs, does not modify the pairs, and if applicable returns the set of all pairs. With this in mind, it might be evident that the initial loop from i to N can be done using threads. The innards of the loop will stay essentially the same because each thread would still terminate early under the same conditions as the serial for loop execution – this occurs if the value greater than the next index to look at.
+
+The only notably change that might need to occur is with storing the chain links in an output. If desired, this output could be a dynamic container of pointers, and anytime a thread has a chain link to store that thread could use a shared mutex to lock the container and add its values (though this would require some move semantics depending on the containers used). A programmer could get fancy and build a linked list of separate chain sets using a compare exchange operations with a while loop, but in this situation it should be known that the most chains/islands possible should never exceed half of the pairs of interacting objects – that is a scenario where all chains that exist are just the known pairs of interacting objects.
+
+Using a static array as the output should be fine, and the same pattern seen in the original algorithm could be used just with an atomic integer to obtain the current index and increment the number of indices used. That is, the “chain index” variable described in the pseudo code above would be an atomic integer and utilize a fetch add operation of 1. This behavior would be identical to what is already demonstrated in the pseudo code.
+</pre>
+
+			<pre><h2>Reducing the Serial Problem Using Parallelism and Thread Safety</h2>
+There are a few things to consider in given circumstances that might require further tailoring for optimal performance based on the hardware used. Firstly, multicore performance in CPUs will typically decay when utilizing all available cores and threads – i.e. clock speed will decrease under full multicore load. Heeding this general behavior and knowing that each thread would be working on a serial task, it could be that a single thread running at the highest clock speed available could result in better performance in situations where N is reduced in size over a problem set. This islanding situation can further benefit from parallel work to reduce the size of pairs to look at when examining chains. Consider the following pseudo code to run in parallel over the original set of pairs – the set cardinality being the maximum N.
+</pre>
+			<div class="code">
+				<h3>Reducing Chain/Island Configurations in Parallel</h3>
+				<ul>
+				<li>reduced_pairs[N][]</li>
+				<li>atomic reduce_index := 0</li>
+				<li>objectsOn[]</li>
+				<li>constraint_pairs[N][]</li>
+				<li>objects[N]</li>
+				<li>comparator[N]</li>
+				<li>...In thread function f(i) where i is in the range [0, N-1]</li>
+				<li>least := comparator[i]</li>
+				<li>indexOn := i</li>
+				<li>for j in constraint_pairs[i]</li>
+				<li>&nbsp;&nbsp; if objects[constraint_pairs[i][j]] has mass AND least > comparator[constraint_pairs[i][j]] then least := comparator[constraint_pairs[i][j]], indexOn := constraint_pairs[i][j]</li>
+				<li>end for</li>
+				<li>if indexOn is not equal to i then objectsOn[i] := false</li>
+				<li>for j in constraint_pairs[i]</li>
+				<li>&nbsp;&nbsp;if indexOn is not equal to constraint_pairs[i][j] then objectsOn[constraint_pairs[i][j]] := false</li>
+				<li>end for</li>
+				<li>...End thread function</li>
+				<li>...In thread function g(i) where i is in the range [0, N-1]</li>
+				<li>if objectsOn[i] is true then reduced_pairs[atomic add 1 to reduce_index] := constraint_pairs[i];
+				<li>...End thread function</li>
+				<li>Run serial chain/island algorithm using reduce_pairs instead of constraint_pairs</li>
+				</ul>
+			</div>
+
+			<pre>This scenario is given merely as an example of how to think about things in parallel. Notice that this process will reduce the total number of constraint pairs to test in the chain/island algorithm first described. Instead of iterating over the set from 0-N of the “constraint_pairs” array, the algorithm would iterate over the “reduced_pairs” array, which is guaranteed to be smaller than N. It is worth noting that in some scenarios this will reduce to the actual count of chains if the comparator values happen to be organized in a by-chance correct way. For instance, look at figure below and keep track of objects [A,G] using the thread(s) pseudo code above to process each letter in a separate thread. For comparators use: A is 3; B is 7; C is 5; D is 2; E is 4; F is 1; and G is 6. Also note that object “A” has no mass, but the remaining objects to have mass – object “A” in this figure represents the surface of a very large mass and should be less notably affected by the other objects.</pre>
+			<div class="figure">
+				<img src="chainingObjects/letterBlocks.png" alt="Stacks of blocks with letters">
+				<p><strong>Figure E</strong> Possible Identity of Blocks</p>
+			</div>
+
+
+			<pre>Following the pseudo code above should result in only the F and G constraint pair data being moved to the reduced pairs (if not I messed up the description of the pseudocode above /(,-_-,)\). However, consider the case of D and C swapping comparator values. If you follow through the same process again the result will suddenly have three constraint pairs to test: F, G, and C. However, the case still stands that this could reduce the initial work for the single threaded chaining algorithm because the sets to iterate over at 7 and was reduced to 3. This example is unlikely to present any real need to reduce a set of 7 potential chains from the multithreaded chaining algorithm, but the example is meant to further demonstrate an embarrassingly parallel problem.
+
+Hopefully the only lingering question – if any exist – is how is the reduction process above actually an embarrassingly parallel problem? This question would likely arise from seeing that all threads running might simultaneously attempt to set a Boolean in “objectsOn” to false. The reason this works is in knowing the memory is not going to be read during the time the threads are executing. In fact, a few lucky scenarios might exist where the memory address to a given Boolean index is already known if used by a separate thread and still shared in the larger CPU cache (likely L3). Though, the real point is about how this sort of operation is also thread safe. From the work I was doing to make chaining objects in parallel work, I have no immediate use to implement turning constraint pairs off and can get by just fine by running the chaining algorithm in parallel for the original count of constraint pairs.
+</pre>
+			<pre><h2>Conclusion</h2>
+Parallel considerations do not really end here, but identifying a category of problems by understanding the concept of embarrassingly parallel is definitely a good place to being. Working between shared data sets might require some amount of communication and spin locking threads to ensure race conditions do not occur when sharing mutable memory. The closest example demonstrated here would be handing out index values to a global array to store the results of a thread by using an atomic integer, but many more options can exist as well. If curious, check out the concept behind “parallel prefix sum” to see how race conditions can be avoided by running multiple dispatches over a problem that reduces in size with each dispatch, or similarly might be turning off previous threads under certain conditions. Of course, as mentioned at the start of this article it is highly worth considering implementing something a straightforward and vector addition to really understand what simple thread safe behavior looks like.
+</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
