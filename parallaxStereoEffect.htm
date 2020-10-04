@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Parallelism</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="dataPoints.png" alt="Particle Rendering">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>The tides are always changing, and graphics programming is no exception. While parallax shading was useful to add artificial depth to textures, dynamic tessellation of a surface to add topology has (and for awhile) become less costly to perform. However, parallax shading techniques could still have use in other settings for large textures where mesh topology cannot be observed. In this case, parallax shading was tried to produce two views of a background image, yielding a stereoscopic presentation – with the intention to try this idea in virtual reality (VR) to produce skyboxes with depth.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Constructing Stereoscopic Images with Parallax Shading</h2>
+			<pre><h2>Background</h2>
+With the significant growth in virtual reality, I have become more interested in looking into subjects like image-based rendering – which has been around for a several decades. I have gotten myself quite prepared to explore this topic by digging into some journals from the 90’s to give myself a basis to work from. However, before finding out that older techniques are still relevant to graphics programming today – again, found in VR – I did have a short bout trying to build stereoscopic imagery using parallax shading techniques. This choice was based on videogames – starting in the early 00’s (to my account) – using this technique to add depth to flat surface. Because of my consumption of videogames, parallaxing was the first technique I could think of when trying to expand visual fidelity for a setting like VR.
+			</pre>
+			<pre><h2>Brief Introduction on Parallax Rendering</h2>
+Parallax rendering is essentially akin to the phenomenal concept of parallax – as opposed to a computerized analogy. The movement of objects appear different from one another based on the viewer’s perspective. My personal definition might not be descriptive enough for some, but <a href="https://en.wikipedia.org/wiki/Parallax">Wikipedia</a> is likely to have a bit more detail. Though, as this project spawned from observing parallax in videogames, a description of its use in games might be sufficient.
+			</pre>
+			<div class="figure">
+				<img src="parallaxStereo/upCloseParallax.png" alt="Parallax Shading Close-up">
+				<p><strong>Figure A</strong> Result of Parallax Shading</p>
+			</div>
+			<pre>
+Consider your classic 2D scrolling videogame, well not so classic. New enough that there exist well detailed layers of images from background to foreground. As a character moves left to right, the foreground elements appear to move faster as the screen starts to scroll while elements further back move slowly. What this basically means is that distant objects take longer to move off screen than those meant to be closer to the player.  This effect, in games, grew more complicated over time, resulting in decal textures – think your blood and monster goo splatters being overlay on a wall or floor texture in real-time – that apply this similar principle at the pixel level.
+
+Now, this is not meant to get into too much depth about histories of technology in graphics or shader programming, and the older videogame description is less abstract and is easily observed in life. However, the decal method essentially works the same, just by moving where texture pixels (texels/elements) are applied based on a viewing angle. The similarity is achieved by storing height information for each texel, and so each texel that is closer to the viewer is much like the foreground elements in the side scroller – these foreground texels move faster as the viewer moves because they are <strong>closer</strong> to that viewer. Then, other texels have height values further from the viewer and so these texels move more <strong>slowly</strong> from the viewer. This is where the similarity with the older 2D side scrolling parallax ends; and to some degree, the phenomenal idea of parallax. Oddities start to emerge as the viewer gets perpendicular to the surface of the parallaxed texture because the texels only exist on the plane of the texture (or within bits of surfaces if decaled on another non-flat topology). In the low resolution scenario, the illusion starts to fail but in a high resolution scenario this effect is analogous to viewing holographic images.
+
+Hopefully this description is enough to begin understanding how this method works. There are likely a plethora of written materials which all get into the proper maths and code to start playing around with parallax shaders, but this is just a brief introduction to start describing a test application.
+</pre>
+
+			<pre><h2>Repurposing Tools</h2>
+Personally, it is not very often that I get to take highly specialized ideas and repurpose them. I am normally the type of person that listens to some abstract maths and pave my own road for what I can do with the acquired knowledge. This is one of those unique repurposing scenarios. By the time I had gotten into competent graphics programming, tessellation – to subdivide a topology for more polygonal detail – was becoming less taxing on graphics cards and was where my mind was situated if I wanted to apply more depth to otherwise flat surfaces. However, VR started to be on my mind as a potential interface to consider for other graphics techniques. After all, a good VR system should be rendering two separate frames to each eye at a decent enough resolution (due to discrete resolution displays) to have distinguishable images and remove some of the “screen door” seen closeup on discrete panels.</pre>
+			<div class="figure">
+				<img src="parallaxStereo/pixelParticleParallaxStretch.png" alt="Warped Image from Parallax Shader">
+				<p><strong>Figure B</strong> Go to Warp 9.9?</p>
+			</div>
+			<pre>Because of these interests in VR, I wanted to determine how viable it could be to use parallax shading to make stereoscopic images for large backgrounds. Part of the desire in doing this was to emphasize certain imaging effects that can occur within the shader to make parallaxing work – such as the tunnel vision seen in the figure above, which with some added effects might look like deep space level accelerations (warp 9.9ish). If this was successful, it seemed like a reasonable avenue to explore other ideas such as rendering distant objects to a buffer for the background texture, including height/distance information to yield the parallax results – to minimize aggressive pop-in and pop-out of distant objects while preserving a since of depth around them. I never took that route, but I also have yet to get into any hands-on experience in VR.</pre>
+			<div class="figure">
+				<img src="parallaxStereo/skyStereo2.png" alt="All Spiral Galaxy in Stereo(a)">
+				<p><strong>Figure C</strong> First Full View of Background Image</p>
+			</div>
+			<div class="figure">
+				<img src="parallaxStereo/skyStereo3.png" alt="All Spiral Galaxy in Stereo(b)">
+				<p><strong>Figure D</strong> Second Full View of Background Image</p>
+			</div>
+<pre>The results varied based on how aggressive I made the parallax result. All of these images are derivatives from an image of the Andromeda galaxy, by <a href="http://www.robgendlerastropics.com/M31NMmosaic.html">Robert Gendler</a> (“The Andromeda Galaxy (M31),” 2008). The height maps were manually generated in GIMP, but with little emphasis on what should be correct in depth with perspective. This simple height map creation was based on pairing color patterns together to interpret a gradient between adjacent pixels. The purpose was to get something working quickly, the ideal solution would be to take a 3D scene and render it to a texture and apply height information based on distance to the viewer, with the greatest distance being used to normalize all height information. A few issues are apparent in the first two images (<strong>Figure C and D</strong>) which made me consider different aspects of manipulating the shader to ensure better coherency. These first two images demonstrate how easily a large texture (the entire background of a scene) can become stretched and skewed when applying the parallax. Part of the issue was parameters for the shading, but when the image appeared more flat, an intense difference in depth did not exist resulting in a mostly flat image. Realistically in space, stereoscopic viewing might not be as strong of an observation when compared to holding my hand in front of my face; but the exaggeration is helpful to start getting ideas for how smaller scenes might come together using this effect.</pre>
+			<div class="figure">
+				<img src="parallaxStereo/stereoscopicTest.png" alt="Zoomed Spiral Galaxy in Stereo(a)">
+				<p><strong>Figure E</strong> 1st Narrow View of Background Image</p>
+			</div>
+			<div class="figure">
+				<img src="parallaxStereo/stereoscopicTesting.png" alt="Zoomed Spiral Galaxy in Stereo(b)">
+				<p><strong>Figure F</strong> 2nd Narrow  View of Background Image</p>
+			</div>
+			<div class="figure">
+				<img src="parallaxStereo/stereoscopicTesting2.png" alt="Zoomed Spiral Galaxy in Stereo(c)">
+				<p><strong>Figure G</strong> 3rd Narrow View of Background Image</p>
+			</div>
+			<div class="figure">
+				<img src="parallaxStereo/stereoscopicTesting3.png" alt="Zoomed Spiral Galaxy in Stereo(d)">
+				<p><strong>Figure H</strong> 4th Narrow View of Background Image</p>
+			</div>
+			<div class="figure">
+				<img src="parallaxStereo/stereoscopicTesting4.png" alt="Zoomed Spiral Galaxy in Stereo(e)">
+				<p><strong>Figure I</strong> 5th Narrow View of Background Image</p>
+			</div>
+<pre><h2>Conclusion</h2>The furthest I took this project was getting the center of the image to be the primary portion of the image observed. I did play around with some tweaking, which produced more stretching and blurring, and the overall effect came out reasonably well. In the figures provided, I find the cleanest gradient to be in the last image (<strong>Figure I</strong>) – which with its inaccurate height map, offers a conical peak surrounded by floating debris. I would not call any of these images perfect, and would instead place them in a category of “fun art.” Of some of the procedural art projects I have worked on, this harkened back to my earliest “Hello World” moment in computer graphics of procedurally texturing cells of a uniform grid to make an interpretive dance of colors. This was a bit more complicated overall, but it is offering stereo imagery. As for pursuing this in VR, I am again taking some time to discover more traditional image-based rendering concepts because they seem to be involved in current industry practices. However, I would certainly enjoy picking this up again if the opportunity came up; but I also have new ideas that I might have to play around with as well.
+
+Feel free to expand each image in a separate tab to check out how they vary. Do note, proximity to the image based on its size might present better stereo presentations over others. Take the time to adjust your position based on the size of the image in your display. Certainly the benefit of trying this in VR would be some ease of calibration compared to freely looking at image/photograph with unrestricted range of motion.
+</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
