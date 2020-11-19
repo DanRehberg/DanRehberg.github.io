@@ -41,13 +41,6 @@
 	<section id="mainContent">
 		<div class="presentation">
 			<div class="videoContainer">
-				<iframe src="https://drive.google.com/file/d/1S5AGoZ-zuHGKCu1NEL33p0G9LdhXBekX/preview" allowfullscreen="true">
-				</iframe>
-			</div>
-			<p>Ray tracing for occlusion allows for shadows to retain colors from the incident light sources. The benefit of ray tracing for general occlusions is removing <strong>screen space ambient occlusion</strong> artifacts and mishaps while allowing light colors to interact - which provide different hues of shadows in an environment. The limited tracing required for shadows ensures that runtime environments can utilize this form of raytracing especially well given the ease in reconstructing light volumes with minimal rays traced in a view - compared to other ray tracing visual effects such as reflections.</p>
-		</div>
-		<div class="presentation">
-			<div class="videoContainer">
 				<a class="projectLink" href="parallaxStereoEffect.htm">
 					<img src="parallaxStereo/upCloseParallax.png" alt="Parallax Shading Close-up">
 					<p class="description">The tides are always changing, and graphics programming is no exception. While parallax shading was useful to add artificial depth to textures, dynamic tessellation of a surface to add topology has (and for awhile) become less costly to perform. However, parallax shading techniques could still have use in other settings for large textures where mesh topology cannot be observed. In this case, parallax shading was tried to produce two views of a background image, yielding a stereoscopic presentation – with the intention to try this idea in virtual reality (VR) to produce skyboxes with depth.
@@ -55,6 +48,16 @@
 				</a>
 			</div>
 			<p>Constructing Stereoscopic Images with Parallax Shaders</p>
+		</div>
+		<div class="presentation">
+			<div class="videoContainer">
+				<a class="projectLink" href="rayTracingOcclusionSampling.htm">
+					<img src="projectABanner.png" alt="Convex Hull">
+					<p class="description">Ray tracing for occlusion allows for shadows to retain colors from the incident light sources. The benefit of ray tracing for general occlusions is removing <strong>screen space ambient occlusion</strong> artifacts and mishaps while allowing light colors to interact - which provide different hues of shadows in an environment. The limited tracing required for shadows ensures that runtime environments can utilize this form of raytracing especially well given the ease in reconstructing light volumes with minimal rays traced in a view - compared to other ray tracing visual effects such as reflections.
+					</p>
+				</a>
+			</div>
+			<p>Reducing Ray Samples for Occlusion</p>
 		</div>
 	</section>
 
