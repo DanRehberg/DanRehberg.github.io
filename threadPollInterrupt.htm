@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="Java, Position Based Dyanmics">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Specialized Optimizations</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="codeBanner.png" alt="Lines of code">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>When multithreading, user control is present to decide between a control mechanism based on interrupt calls or by polling. In the threaded environment, this can be aligned to having threads wait, or sleep, and having threads remain active through spinlock. This is an analysis of sequential work in that jobs are shared between all available threads this one job must be complete before moving onto the next task, rather than using a thread pool to check for an ever-changing queue of asynchronous tasks. The information collected is spread between a sustained workload and a few dispatches before closing the program.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Synchronized Threads: Polling versus Interrupt</h2>
+
+			<pre>Being an active computer science student, I was recently watching the recording of a virtual lecture which brought up the idea of polling and interruption. To put it simply, polling is sitting and waiting on another task to be finished – kind of like an employee peering into their boss’ office door waiting for them to not be busy. The interrupt is like an employee working at their desk until they receive an email summoning them to their boss’ office. The context for this discussion was at the hardware level as the course I am taking is primarily about logical circuits, CPU architecture, assembly, and finally a high-level language like C. In particular, the lecture stated that the optimal choice is to rely on interrupts but this is was for the CPU architecture level of the course, in which waiting on external peripherals – like a keyboard – is wasting clock cycles and instead should rely on an electrical signal coming in to momentarily interrupt a program and let an operating system handle the signal.
+
+While it seems optimal for the hardware level behavior of a computer, I am currently working with a custom thread pool to build a new physics engine – fourth so far – and thought it might be useful to point out polling and interrupt behavior at the software level. This is an issue for my thread pool when performing synchronized tasks – that is when all threads are working on the same job, and that job needs to be complete before moving onto the next task in the program. The goal of this information is to help clarify that certain optimizations are circumstantial; reflecting to the parable of, “don’t preoptimize!”</pre>
+
+			<h2>Introduction</h2>
+
+			<pre>The behavior of threads either polling or interrupting can be described with two different approaches: <strong>spinlock</strong> and <strong>sleeping</strong>. <em>Spinlock is having the thread looping – doing nothing – until it breaks from the loop to do work</em> which is like polling. <em>Sleeping is essentially having the thread not look for more work for a brief period</em> which is akin to interrupts. Either of these methods of waiting for work are possible with the synchronized multithreading performed.
+<em>Synchronized multithreading means that the order work is performed in is important and must be preserved</em> whereas <em>asynchronous multithreading has jobs that can be completed in any order</em>. Thread pools – <em>threads initialized once and kept active in a container for the life of the program</em> – are not uncommon for asynchronous work. The async concept for thread pools is to push a task to a work pending container in which one of the threads in the pool can jump out and complete that task. This method is ideal when all tasks are independent, but there are times where efficiency means sending several threads to work on the same job. Working on the same job should still involve independence – e.g. vector addition, the “Hello World” of parallel programming – in shared tasks, but the result will not be available until all involved threads are finished; sometimes then leading to another shared task as is the case in a parallel prefix sum.
+The physics engine I am working on requires several stages of synchronized work (which will get its own writeup to share in time) and so keeps all threads in some form of stasis until the job is provided for all threads to share. The information provided helps show how the implementation of keeping threads stasis – i.e. spinlock (polling) and sleeping (interrupting) – vary based on the use in a program.</pre>
+
+			<h2>Method</h2>
+
+			<pre>Two environments were used to test the dispatch performance of spinlock and sleeping threads. The scenario with the most data collection and analysis was a simple program which used the thread pool to either run a time of intersection function or to run a simple arithmetic operation which involved integer subtraction, integer modulus, casting, and finally floating point arithmetic (specifically multiplication). Generally speaking, the arithmetic function was less intensive than the time of intersection function. A full description of the time of solver will wait for information regarding the new physics, but suffice to say it totals more operations had has a constant set of <strong>n tasks</strong> for each thread. The count of <strong>n tasks</strong> in the arithmetic function was set before execution and is used to demonstrate behavior as the number of tasks within an entire job increases. Each time this program was run, eleven trials using the same work function were performed and completion times were reported for each of those trials – typically meaning the lifespan of the program was short.
+
+The second environment was a sustained program using a prototype game built in my custom simulation system. Not only is the program sustained – and therefore not ending quickly as the other program does – but also is running many different parallel synchronized work tasks per frame. The number of tasks is a bit numerous to count but involves things like path finding, collision testing, render culling, physics tasks, and animating characters either with forward or inverse kinematics.
+
+Between each environment, one represents short bursts of parallel work whereas the other represents an ongoing reliance of a thread pool for an unregulated duration. Performance for the short bursts is the time in microseconds passed to complete a single trial using either the time of intersection function or the arithmetic function. Performance for the sustained environment is described as a rate of frames per second. Note this means that greater performance for the first environment is a smaller value, whereas the second environment is a greater value as a rate by time is an inverse of time.
+
+Additional data collected depended on the environment used. For the first environment, trials also included testing how many threads were active during working periods. This was determined by having an atomic counter, initialized to 15, available for threads to fetch add into to ensure atomicity with a shared variable. Once a thread left is stasis, it would fetch add -1 with the counter to obtain the last counter value and reduce it for the next thread. When a thread was about to enter stasis again it would fetch add +1 to the counter to restore it towards its original count of 15.
+
+Additional data collected for the second environment included frames per second over a 60 second run of the prototype game. This encouraged variable stresses to be placed on the CPU as time of day events in the game caused different executions of the thread pool to occur – such as pathfinding for characters between going home or going to their place of work. Additionally, the clock speed of the CPU cores was observed over this 60 second run of the program. The information was not graphed because there is less control over the tests in the prototype game because of its complexity compared to the first environment. This data is still provided to illustrate correlations with the type of stasis used in the second environment.
+
+The hardware used was consistent between the two environments. A 8 core 16 thread Ryzen 3700x was used. 1 thread was strictly the parent thread that is used to start in the main function of the program to setup the test environment and to dispatch threads to work on jobs. In some trials, 15 worker – i.e. child threads – were stored in a thread pool summing the total thread count in the program to 16 to help avoid context switching between threads. However, some trials were run with 20 worker threads, effectively meaning 5 of them are virtual and would require the operating system to manage context switching within the same program. The total number of trials run for the first environment is 55 as a result of running eleven trials per execution of the program and running the program five times. The thread pool consists of threads that were detached rather than joined, and therefore are running as daemon threads.</pre>
+
+			<h2>Results</h2>
+<pre>The general performance results between the stasis methods employed – spinlock versus sleeping – varied by the environment tested. Figure 1 shows the results of the first environment using either the sleep or spinlock method to manage the stasis of a thread pool when running the time of solver function. The first two pieces of information are only describing the use of 15 worker threads to avoid excessive context switching by the operating system, which seems to favor spinlock which finished in under 10 microseconds on average over the 55 total thread dispatch trials, while the sleeping method took approximately 60 microseconds over the same trial count. The last piece of information includes the sleeping method of stasis for the dispatch using 20 worker threads meaning 5 virtual threads and a potential need for context switching. The 20 worker threads took slightly more time to execute compared to the case of 15 worker threads that used the sleeping method of stasis. A spinlock case using 20 worker threads was also performed and will appear further down in the results as it complicates the visual cues of this graph.</pre>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure1.png" alt="Graph showing spinlock is finished in a tenth the time of sleeping threads for very brief multithreading">
+				<p><strong>Figure 1</strong> Short Multithreading Duration, Sleep Vs Spin</p>
+			</div>
+			<pre>The second environment is demonstrated in the provided video, which has frametime and frames per seconds diagnostics visible at the top left of the screen. Note that the video is slightly slower than both the sleeping and spinlock methods of stasis due to the extra overhead required to record the scene. The data collected was not during recording, and so revealed results without this overhead. Running the scene for a full minute had the spinlock and sleeping methods performing similar to each other, but with a slight lead for the sleeping method for stasis. During the daylight portions of the scene, the sleeping method typically stayed above 530 FPS while peaking stably at 540 FPS, and during the night scene was around 520 FPS. In contrast, the spinlock method ran in between 520-530 FPS during the daylight portion of the scene and between 500-515 FPS for the night scene – fluctuating noticeably more than the sleeping method.</pre>
+			<!--div class="presentation"-->
+				<div class="videoContainer">
+					<iframe src="https://drive.google.com/file/d/1H7JYRmgHmBSWs6rfZ_DKq1KpsCt0APHh/preview" allowfullscreen="true">
+					</iframe>
+				</div>
+				<p><strong><em>Second Test Environment</em></strong></p>
+			<!--/div-->
+			<pre>The second environment included looking at the state of the CPU during the 60 second runtime. Within the sleeping method of stasis, all cores stayed at about 49 Celsius with a clock speed of 4300 MHz. The spinlock method had more irregularity in clock speed – with a deviation of about +-25Mhz – but primarily sat around 4200 MHz with a common temperature between all cores of 60 Celsius.
+
+With some general irregularities described, special cases are worth noting. Figure 2 shows the first environment dispatch again using the time of solver function between either 15 or 20 worker threads. As can be seen, the average 55 trials in the spinlock method using 20 worker threads on a machine that only has 16 real threads overshadowed the other trials with the same environment conditions. The cost of context switching with spinlock started reaching the millisecond territory of cost, and so is about a thousand times slower than the other trials. Further testing with spinlock and context switching revealed a similar drastic loss of performance as so was not provided in further graphs.</pre>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure2.png" alt="Graph showing excessive context switching in spinlock is not feasible">
+				<p><strong>Figure 2</strong> More Threads than Harwdare Spec is Infeasible with Spinlock</p>
+			</div>
+			<pre>Running the first environment with the arithmetic function revealed difference results as the number of tasks within each synchronized job changed. Figure 3 shows running only 15 worker threads in either the sleep or spinlock stasis methods with tasks in each job going from one million, to ten million, and one billion. Exceeding one billion was not consider as the feasible number of tasks per job was limited to the range of a 32 bit unsigned integer. Each test at the three respective tasks counts still used the method of running eleven trials per software execution and running the software five times for a total of 55 trials. At the lower count of tasks, the spinlock method is marginally faster than the sleeping method, but they seem to intersect in performance someone around ten million tasks and eventually show a margin favoring sleeping when reaching one billion.</pre>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure3.png" alt="Increase the task count shows an eventual intersection in performance between sleeping and spinlock">
+				<p><strong>Figure 3</strong> Linear Relationship of Sleep and Spinlock at Large N</p>
+			</div>
+			<pre>Relying on the first environment running the arithmetic function, the atomic counter was used to determine how many threads were active at once. Figures 4-11 below indicate the results based on the number of tasks – <strong>N</strong> –, the number of threads used – <strong>either 15 or 20</strong> –, and the atomic counter value each thread fetched over five trials.</pre>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure4.png" alt="Few threads are simultaneously active when sleeping at low task counts">
+				<p><strong>Figure 4</strong> Sleep, N = 242, Threads = 15</p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure5.png" alt="Threads are simultaneously active when spinning at low task counts">
+				<p><strong>Figure 5</strong> Spin, N = 242, Threads = 15</p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure6.png" alt="With 5 extra threads over hardware spec, few threas are simultaneously active when sleeping at low task counts">
+				<p><strong>Figure 6</strong> Sleep, N = 242, Threads = 20 <em>(i.e. +5 Virtual Threads)</em></p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure7.png" alt="Noticeable loss of simultaneous activity when 5 extra threads added over hardware spec to spinning threads at low task counts">
+				<p><strong>Figure 7</strong> Spin, N = 242, Threads = 20 <em>(i.e. +5 Virtual Threads)</em></p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure8.png" alt="Threads are simultaneously active when sleeping at large task counts">
+				<p><strong>Figure 8</strong> Sleep, N = 1.0E6, Threads = 15</p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure9.png" alt="Threads are simultaneously active when spinning at large task counts">
+				<p><strong>Figure 9</strong> Spin, N = 1.0E6, Threads = 15</p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure10.png" alt="Sleeping threads are most simultaneously active when 5 extra threads added over hardware spec and at large task counts">
+				<p><strong>Figure 10</strong> Sleep, N = 1.0E6, Threads = 20 <em>(i.e. +5 Virtual Threads)</em></p>
+			</div>
+			<div class="figure">
+				<img src="threadDataPollInterrupt/figure11.png" alt="Slight loss of simultaneous activity when 5 extra threads add over hardware spec to spinning threads at large task counts">
+				<p><strong>Figure 11</strong> Spin, N = 1.0E6, Threads = 20 <em>(i.e. +5 Virtual Threads)</em></p>
+			</div>
+			<h2>Error</h2>
+
+			<pre>A few considerations are worth noting to describe the variable nature of these test results. Ambient temperature was likely a factor in the performance of the sustained software trials – i.e. the second environment. Temperatures sat around 20 Celsius for all tests, but if this were to vary it might have noticeable impacts on data collection which might include the removal of observable variance in the sustained software trials.
+
+The atomic counter was regulated by having a global array for each thread to store the atomic value they had fetched. This removes the overhead to do something like print out to the console window during an active trial – which might slow down performance well enough to observe other threads start faster than they otherwise would. However, there is still a time cost in performing this, and while the array size is quite small there is no guarantee that it was cached in at least L3 memory in a consistent way between each trial and execution of software. It still seemed to be the lowest latency option and did still allow for an observation to be made between how many threads could be simultaneously active.
+
+Handling the threads within a program is likely outside of the control of the programmer given the OS will manage the association of a thread to a CPU processor. Hints can be given, but situations can arise where more context switching within a common core occurs despite not having more than the number of threads active in a single program defined by the hardware specification. In C++, this number can be found by looking at the <em>hardware_concurrency</em> value in the standard library. After these tests, there was a time where the hardware specification was adhered to, but results in spinlock mimicked the poor performance of having virtual threads defined. Notably, this was in the second test environment which suddenly had the frames per second crawl in the single or double digits – but always below 20 FPS. This happened a day after collecting the data, and so was not mentioned in the results. However, it helps indicate that this type of unaccountable error might occur and so is mentioned here.</pre>
+
+			<h2>Conclusion</h2>
+
+			<pre>The data indicates that the optimal choice – between polling and interruption – when running a synchronized shared job for a thread pool will vary based on how the work is being performed. It seems that in short bursts the polling method, through the use of spinlock, will outperform the interrupt method. Moreover, this seems to be the case in the testing environment up to a million tasks shared between the thread pool for a single job, but this is likely to vary circumstantially by hardware and the complexity of the task to perform. The interrupt method, through the use of sleeping, seems to have negligible losses in performance in the short burst scenario as the task count goes above one million tasks shared with the thread pool – again circumstantial to the hardware and the complexity of the tasks. It is worth investigating whether or not the sleeping method will outperform the spinlock method in vastly large tasks counts as was roughly indicated in Figure 3 when one billion tasks were shared between the threads.
+
+Figures 4-11 help paint an important picture of differences between sleeping and spinlock methods for stasis, and the importance of large datasets for full parallelism potential. Notably, the thread pool consists of daemon threads and should help encourage parallel workflow more than just concurrency. However, when the task count was low, the sleeping threads were not able to achieve what appeared to be simultaneous workflow. Notably, the atomic counter would give most of the threads across 55 trials the value of 15, meaning that before a new thread was woken to start working the previously woken thread already finished its job. This was never as big of problem for the spinlock system because every thread was constantly checking for a signal to start, not a signal to be woken up and then start. Wakeup time is not near as instantaneous as keeping threads active in a while loop waiting for the break condition. However, when exceeding the available count of threads – the case of having 20 worker threads in these tests – the problems of spinlock start to emerge limiting the total effectiveness of parallelism. In particular, results in Figures 7 and 11 it can be seen that trials had threads waiting still while other threads had finished their work – highlighted by the flat line at 15 for the atomic fetch value. Increasing to one million tasks ensured that even the waking of sleeping threads did not take longer than the execution time – meaning that at high work counts, parallelism with the sleeping method is achievable. It will be worth investigating more how to generalize the number of tasks to produce threads that are going to run simultaneously when a thread pool relies on a sleeping form of stasis.
+
+In the sustained workloads, it seems that the sleeping method outperformed spinlock. This was contrary to the first environment where the test was a short burst of the thread pool. The data collected shows that a general claim can be sustained: <strong>temperature affects clock speed</strong>. Notably, the data collected demonstrated a negative correlation between temperature and performance. This makes sense when considering what is happening between the methods of stasis. While in spinlock, the threads should always be performing some work. When they are not allowed to leave stasis, that work involves checking whether they can leave, and then branching to the top of a while loop again. In the sleeping method, the threads become inactive for a period which keeps the overall temperature of the system down – though they might spuriously wake up, check whether there is work, and go back to sleep if there is none.
+
+To analyze the results with a real-world thought exercise, we return to the office analogy of waiting outside the boss’ door and waiting in one’s own office for an email from the boss. In the short burst scenario, it takes longer to walk over to the boss’ door after receiving an email then it would be to enter the boss’ office when waiting just outside. Imagine if the boss was always ready for employees to come to their office for a talk but you always had to return to your office to find out. Alternatively, if the boss is typically busy, then there might be plenty of time to return to one’s office to get some rest between jobs, whereas the worker waiting at their boss’ door might start to fatigue eagerly waiting.
+
+The analogy of course does not fit the situation wholly but offers an anthropomorphized concept of what is happening. The ultimate and simple explanation to this behavior is the spinlock method starts to be less optimally for prolonged periods because it keeps the cores active and as a consequence puts out more heat – thereby slowing the maximum frequency. The sleeping method is consistently stable but requires waking each thread sequentially which will likely have a variable start time because it could require operating system procedures that are out of a programmer’s control. However, the stability seems to be based on keeping temperatures lower by not overworking cores in the CPU, which consequently seems to keep the clock frequency – between each core – maximum range at a greater speed.
+
+As a result of this difference in behavior, implementing a notification system for interrupt behavior or keeping threads active to unleash at a moment’s notice will vary based on the circumstances of use. There are ways to assist performance (to be talked about more thoroughly with the upcoming physics engine) when using sleeping methods, but ultimately a decision on how to activate a thread pool should be dependent on what the final scheduling process looks like.</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
