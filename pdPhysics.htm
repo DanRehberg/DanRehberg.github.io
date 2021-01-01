@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="Rigid body dynamics, Continuous Collision, Speculative Contacts">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: One Pass Mechanics</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="codeBanner.png" alt="Lines of code">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>With a new physics engine in my project queue and a new year looming around, I took some time to briefly reflect on the first physics engine I built. This is not comprehensive and instead lets me gently reconsider my old work: what works about it and what philosophical considerations I might change.</p>
+	</aside>
+	<section id="mainContent">
+		<!--div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1z0X8DuldRJTE7No_RrevRDHdwAuShptv/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Agressively Changing Contacts in a Dynamic Manifold</p>
+		</div-->
+		<div class="writeup">
+			<h2>Reflecting on First Physics Engine</h2>
+			<pre>Currently I am working on a new physics engine meant to mitigate some issues between discrete and continuous simulations. Typically, the physics engine extends beyond merely applying impulses between rigid bodies or forces between particles to demonstrate phenomenal behavior, but also requires necessary forms of mathematics to describe fields or barriers given by geometric interpretation. This article is not a formal presentation for what the new physics engine hopes to achieve but is instead a reflection as the end of the year approaches. Briefly I wanted to describe the work I had done in my first physics engine, in an attempt, as an autodidact, to describe the mechanical world around me in simulation without formal teaching on the matter – aside from an introductory physics course when I was in high school. (Video pending...)
+
+Since then, I have written two other physics engines. The second was very similar to the first, and the most recent was abstract enough that I could test different methodologies of mechanics simulation. While the newest engine can fit several different scenarios of continuous physics systems – having been used for strictly sorted time of events, speculative solving, separation/stabilization of overlapping bodies, and progressive contact manifold generation for temporal coherency – it has left a stronger longing for the creative expression I allowed myself in the past (due to ignorance) to creatively find my own means to handle physical interactions. More than that, I think I have found areas to better bridge discrete and continuous physics simulations for the sake of performant software in a parallel environment. The latter statement is just a drive to explore my new thoughts and are not entirely indicative of what actual results will look like (it could run like a potato), but preliminary testing seems promising. Yet, researching some primary practices for physics simulation makes me feel a little more capable of describing the first engine I made in 2014.
+
+After an internship ended in early 2013, I decided to spend my time looking into modern videogame development as a learning exercise. Making interactive games had been a hobby of mine from a young age, but this was an opportunity to explore modern high performant practices: building engines for logic, physics, and graphics. The working title for the game was “Project Dane,” a description as it was inspired from Danish folklore among other mythos. I would highly recommend any other young adventurous learner to delve into such a vast project to get intimate with mathematics.
+
+The mathematics I describe help portray what I would need to work around to build the physics engine. Notably, I had chosen a unique aesthetic to bridge older traditional sprite-based animations with interpolation. The idea is that the perspective was orthogonal, like an older point and click isometric roleplaying game but where animation styles differed by being in the plane of the screen or rotating against this plane. If rotating against the plane of the viewspace, then portions of the mesh would be swapped for other meshes (indicating another angle/side of the rotating object) like an image swap in sprite-based animations. If rotating within the plane of the viewspace, then portions of the mesh would smoothly interpolate from one state to the next. The explanation for this space is based on deciding the vertical axis is shared between two common dimensions: depth and vertical motions along the plane. Two additional dimensions also existed: an independent horizontal axis and an additional third dimension to align with the vertical axis that already shared depth and vertical plane positions.
+This four-dimensional space is not very conventional, but it allowed me to express the aesthetic that I desired. It also allowed for a simple beginning with the physics engine by creating a scenario where I considered that objects needing mechanical interactions might not rotate within the viewspace’s plane – requiring interpolation – and might only rotate against the plane to perform sprite swaps. Smooth motion from integrating velocities between these shapes would still ensure a fluid presentation for all motion within the plane of the viewspace. Simplifying the system in this way meant constant axis-aligned bounding-boxes could be used for the physics simulation; moreover I would not need to worry about making the mechanics systems to solve more complicated then they need be. So, given the aesthetic of the game, I allowed my physics system to be simplified by setting a constraint on the degrees of freedom available to the mechanical objects – they could move vertically or horizontally along the plane of the game world (changes in altitude were planned by never implemented).
+
+The available motion of the mechanics objects was effectively up, down, left, and right which allowed me to contemplate direct positional solutions along the basis of the coordinate system. By contemplate I mean to say that the system looked so simple that a straightforward solution using position correction was viable. Of course, this was before I even understood the velocity-based approach that has been common in mechanical simulations for decades, but not knowing that information helps me know at present that position correction methods are viable options without introducing an excess of jitter in the system of constraints. Part of the removal of this jitter was by not relying on floating point values within the coordinate system; instead, the coordinate space was entirely based in the domain of integers which were mapped to floats for rendering. As a result, when positions were fixed after a collision, then they were guaranteed to have a correct solution.
+
+The other major factor to ensure the correct solution was to make management decisions in the process of solving contact constraints between bodies. Notably, the collisions were sorted by the pairs with the greatest momentum – favoring static/immoveable obstacles as the greatest potential mass.
+
+Before clarifying the sorting and solving process, it might be useful to describe the collision aspect of a physics engine. For simplicity, what is important to consider is that some type of state between two objects must occur for the collision system to decide that a physical response and correction is required. In this particular scenario, a discrete approach was chosen. This is to say, when two objects interpenetrating – a violation of a contract constraint – then it was known that these two objects must be corrected before rendering the current frame. If these were not corrected before rendering, then obvious events irregular to our macroscopic observations of mechanics would be in the presentation.
+
+So, the colliding objects were sorted to be solved by greatest momentum to least momentum, and they were reported only when it was found that two objects were trying to occupy the same space at the same time. With all this in mind, the decision to directly solve for the contract constraints was made by forcing the lesser momenta to be solved around the greater momenta. The greater momenta would still experience an impulse exchange but for the initial contact violation, the object with less momentum was forced to move along the violating axis by the amount of violation imposed by the greater momentum. What was remarkably simple about that was any pair of colliding objects would only have one along a basis to solve for violations because there was no rotational quality or non-axis-aligned bounding-box representation of physical objects. As a result, when a pair had positions solved for each object was locked from having any further corrections along the same axis solved for if it violated the solution already proposed for the given frame. Every frame allowed new collisions to occur thereby finding new axis of separation, correcting those new violations, and locking axis to solve along as subsequent pairs of objects with lesser momenta were solved for.
+
+I am reflecting on my first physics engine as we round the new year merely because it is in my culture to look back on my life when the calendar year changes. As I reflect on my first physics engine, I am quite proud with how well it operates. It guarantees itself to work in the constraint of the game’s description of a universe for impulse exchanges between rigid bodies while also incorporating other forces – like friction – to further enhance the interaction of mechanical objects in a dynamic environment. I had incorporated optimizations that exploit the game presentation by subdividing the collision detection system into an even distribution of the screenspace by eight separate partitions – though in a worse-case scenario pairs of objects could be shared between these partitions. The goal of partitioning the collision system meant also asserting separate chains/islands for the sorting process when these sets were actually disjoint.
+
+While I work on the new physics engine, I am troubled by a philosophical conundrum that I faced in the first engine. Notably, when I allowed for the lesser momentum object to have its position corrected around the greater momentum object, I was effectively stating that the time required for that energy to exchange between frames occurred during that discrete timestep. This has been bothering me for awhile and is one of the topics I want to explore more with the new engine. Specifically, if motion is discretized by miniscule limitations of space and time, then is it better for the simulation to solve this ordered problem by least momentum to greatest momentum. The slight difference here would be to note that the boundaries of a physical event (collision for rigid bodies) must be reached before energy can be exchanged, and that this energy must take time to be exchanged between the two bodies. This is just a philosophical concern and to be honest probably has no bearing on the physics presentation if the simulation is performant. However, it has been a captivating question for me: let the simulation explicitly find the moment of an event for energy exchange; or to let it be implied for elapsing faster than could be witnessed in the scene.
+
+Regardless of that one philosophical exploration, looking over this previous model for physical simulation has me excited to further explore my new ideas. The new system is planned to allow for use with my existing linear solver for constraints and is expected to work for any cartesian space up to three dimensions – though the distinction is likely viable in N-dimensions, I am just not worried about that at present. I think I have a lot of useful inspiration to derive from my original explorations into the topics of software based simulations, and plan to have something about the new physics engine available online in the coming months of the new year (assuming I settle down on some accepted numerical precision).
+
+			</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
