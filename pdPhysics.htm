@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US">
 <head>
 	<title>Breadth of Programming</title>
 	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
 	<meta charset="UTF-8">
-	<meta name="keywords" content="Rigid body dynamics, Continuous Collision, Speculative Contacts">
+	<meta name="keywords" content="rigid body dynamics, contact solving, position solving, jitter-free, jitter free, videogame, physics">
 </head>
 <body>
 	<header id="header">
@@ -39,13 +39,13 @@
 		<p>With a new physics engine in my project queue and a new year looming around, I took some time to briefly reflect on the first physics engine I built. This is not comprehensive and instead lets me gently reconsider my old work: what works about it and what philosophical considerations I might change.</p>
 	</aside>
 	<section id="mainContent">
-		<!--div class="presentation">
+		<div class="presentation">
 			<div class="videoContainer">
-				<iframe src="https://drive.google.com/file/d/1z0X8DuldRJTE7No_RrevRDHdwAuShptv/preview" allowfullscreen="true">
+				<iframe src="https://drive.google.com/file/d/1ioS7MwMY9-PpimXKD5CW9eTB_kxii0L1/preview" allowfullscreen="true">
 				</iframe>
 			</div>
-			<p>Agressively Changing Contacts in a Dynamic Manifold</p>
-		</div-->
+			<p>Ordered Dynamics for Jitter-free Position Correction</p>
+		</div>
 		<div class="writeup">
 			<h2>Reflecting on First Physics Engine</h2>
 			<pre>Currently I am working on a new physics engine meant to mitigate some issues between discrete and continuous simulations. Typically, the physics engine extends beyond merely applying impulses between rigid bodies or forces between particles to demonstrate phenomenal behavior, but also requires necessary forms of mathematics to describe fields or barriers given by geometric interpretation. This article is not a formal presentation for what the new physics engine hopes to achieve but is instead a reflection as the end of the year approaches. Briefly I wanted to describe the work I had done in my first physics engine, in an attempt, as an autodidact, to describe the mechanical world around me in simulation without formal teaching on the matter – aside from an introductory physics course when I was in high school. (Video pending...)
