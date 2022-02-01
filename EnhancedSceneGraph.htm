@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Scene Graphs</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="sceneGraphAlt.png" alt="Dividing Space">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="#">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>For sparse data structures, the use of a morton code to describe the locality of a position in a single scalar value is rather exciting. Other practical representations of space exist, but the Z-order curve offered in morton codes provides a practical basis to bisect an entire volume of space into subsequent halves to explore for information. This particular usage of a <em>bounding volume hierarchy (BVH)</em> was based on a parallel BVH paper (translated from GPU presented usage to an optimal CPU version) but has been tailored to promote scalability of the applicable amount of space for which <strong>stuff</strong> can exist. In particular, this is running in a highly parallelizable system used for discrete simulation and interactive virtual worlds. Under the conditions that both of these provide, enhancing the usage of this BVH is based on the constraints of floating-point precision and the total number of bits being used to hold a morton code value. </p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Bounded by Morton Codes: Enhancing the Total Representable Space</h2>
+			<pre><h2>Background</h2>
+My most recent game engine is nearing 6 years old. It was a project built on the inspiration of designing parallel algorithms to produce better parallel scalability in discrete simulation and interactive software. Of known variance in logical circuits, this project was concerned with the underlying hardware architecture for which parallel design is created as <em>"best practices"</em> will vary for instance between GPUs and CPUs. An excellent paper written by <em>Tero Karras of Nvidia</em> convinced me that scene graph construction could be allowed to be highly dynamic when managed using parallelism. This paper outlined <em>"best practices"</em> for a GPU implementation, I refactored it to work with my thread pool for parallel CPU dispatch. This included several variants to strike a balance between an appealing object-oriented-paradigm design and being highly performant. As a result, the system has been made quite fast by avoiding excessive dereferencing/virtual-lookup through polymorphic behavior while still retaining a not-too-complicated appearance for a graphing structure (if anything, the elegance of the polymorphic design was more complicated to implement in a fashionable manner, and really only resulted in comparable interface for the end-user programmer).
+
+The graph implemented here is of a <strong><em>bounding volume hierarchy (BVH)</em></strong> which encapsulates objects within sub-volumes of space for accelerated traversal as a data structure. This is primarily enabled by the space-filling Z-order curve which emerges from collapsing multi-dimensional coordinates into a Morton Code (MC).
+
+Impressively, while balancing between usability and performance, this graph structure can be built on a per frame basis with several thousand objects (which influence the graph) at several hundred frames-per-second (FPS) using this parallel system. This adaptability helped encourage myself in the use of a BVH for real-time interactive software, and further had me design the use of the BVH as a multi-purpose graph for both physics simulation and graphics culling. The original use had every object being purely dynamic, allowing the logic loop to build a BVH per frame which was traversed for render culling and had all objects perform collision testing within the BVH to run callback functions linked to pairs of objects; i.e., the latter meant that if two objects, say <em>'x'</em> and <em>'y'</em>, have a function defined to produce a reaction when colliding, then the system would propagate a need to have the reaction function run on 'x' and 'y' <strong>IFF</strong> there was a broad collision found between them in the BVH.
+
+This was eventually modified to account for <em>different levels of activity</em> that objects in a system might have. For instance, some objects might primarily be static while others are primarily dynamic. After a few tweaks to the system, this meant defining two separate BVHs: one held as a persistent data structure and the other still being created on a per-frame basis. This has now been enhanced further to create a larger space for simulation or interactive play by considering sets of BVHs of mostly static elements, spatially dynamic elements, or universally dynamic elements. The first two state whether they belong to the reference frame of a BVH of objects, and the third description is for objects who are so dynamic they are better kept out of the reference of any persistent BVH. However, the dynamic objects in the persistent BVH frame are not actually built into the BVH, but merely are meant to describe high associativity with a given reference frame.
+
+Describing these three tiers has the benefit of: not rebuilding a BVH which remains rather static/coherent over time, localizing dynamic objects which are known to be scoped to a given region of space but regularly change their description of position and orientation, and ensuring some elements are always updated regardless of the space currently being viewed. A timestep to the next temporal frame still builds a new BVH, but using the dynamic elements currently within the scope of <em>relevant space</em> observed in the system; this being the dynamic objects owned within the bounds of a persistent BVH, and the universally dynamic objects. Collision testing is then paired to any of these dynamic objects within the persistent BVH of a region of space, and then separately each dynamic object within the temporal frame BVH which only exists for the given timestep. All collisions are then propagated to the response system if an interaction/response function exists between any two pairs of elements. If the reaction involves islands/chains of elements, such pairing is allowed within the application layer where the end-user builds the response function between pairs of objects - allowing for more complex events to occur on the basis of specialized needs within the simulation software. Essentially, this entire system is primarily designed as an API with a lot of computational control still given to the end-user.
+			</pre>
+			<pre><h2>About Morton Codes and Other Constraints</h2>
+Most of this software relies on 32-bit floating point values over 64-bit doubles and much of the rendering is based on 32-bit floats, but I would also argue that the implementation also works effectively with physics simulation because of the limited bounds that preserve general precision of a space. Additionally, the system is using 32-bit unsigned integers for the MC values, so in 3D space this means 10-bits of data in the available 32-bits represent the x, y, and z values, respectively. The basic structure of a MC is as follows: per-axis present, interleave all axis bits in ascending (or descending order) with all other axes' bits. So, in this 3D example, the highest x bit would go in the 29th bit-index of the 32-bit integer, followed by the highest y bit in the 28th bit-index, followed by the highest z bit in the 27th index, followed by the next highest x bit in the 26th bit-index, etc.. In this example, the 30th and 31st bit-indices would be zeroed out. While this system does not do this, the extra two bits could be used to represent 4 different layers of MC codes - possibly for determining one of four BVHs for which these MC values belong, as an example or for a far smaller fourth dimension.
+
+The MC is based on the center of mass coordinate of all objects within the system. If all of the MC values are ordered in ascending or descending order, and a path was drawn between the adjacent locations where these MC values are defined, the Z-order curve filling pattern emerges. As this write-up is mostly about enhancing this particular scene graph, the details of this are left to the reader to <a href="https://en.wikipedia.org/wiki/Z-order_curve">explore.</a> However, an important premise to accept is that these morton codes provide information that help describe which elements are most likely adjacent to other elements.
+			</pre>
+			<div class="figure">
+				<img src="EnhancedBVH.png" alt="BVH as a Scene Graph">
+				<p><strong>Figure A</strong> BVH as a Scene Graph</p>
+			</div>
+			<pre>
+Consideration of floats over doubles in representation of <em>"real numbers"</em> might provide some curiosities like, <em>why should floats and 32-bit MC values have acceptable precision in a simulation or even high-fidelity videogames?</em> The answer is based on the limited representation of unique spaces allotted by the 32-bit MC. Of note, if we can only represent 10 bits of information along 3 coordinate axes, then this means the number of unique MC values available per-axis is 2 to the power of 10 - as bits represent base 2 values. So, 1024 unique units exist per-axis. This will sound circular, but the 32-bit float will end up complimenting the 32-bit integer on the basis of arbitrary unit representation within the coordinate space. The 1024 unique entries are practical given increasing numbers of dimensions - specifically with three dimensions a common value along two dimensions can exist and still offer 1024 unique values as a third dimension exists - eventually capping at 1+ billion unique MC values anywhere in the 3 dimensions. Alternatively, in a two-dimension scenario, the tradeoff occurs where the number of unique values per dimension increases to 16 bits, offering a total of the full 4+ billion unique values along those two dimensions. When ascribing the real-world quantity to the coordinate system represented by floats, the important consideration is does this unit scale work within the precision of this arithmetic type? The general rule is 7 bits of precision are available with floating point values. If the elements in a system to be represented by floats are not too small, then this means two options exist for ensuring a maximal quantity of fractional representation - have a coordinate system centered at (512, 512, 512) which reaches from (0,0,0) to (1024,1024,1024), or instead center the coordinate system at the zero vector and let it reach from (-512,-512,-512) to (512,512,512). Choosing the latter, we can see that only a maximum of 3 decimal units are taken into the range of whole values - helping preserve a remaining 4 fractional units in a decimal representation.
+
+For a sanity check of stability as magnitudes of whole order values in decimal representation increase, feel free to run the following C++ code in your favorite compiler to see how representation of small quantities in (likely) IEEE representations differ between floats and doubles. Furthermore, change the precision of the double to see if its stability appears as strong in comparison to floating point values - having run this in the VS C++ compiler, I have seen greater instability with doubles, but a debate on <em>"what is precise enough"</em> is not quite the point here. Instead, we have a premise that over a relatively small range of space, reasonable precision can be preserved because a good balance exists between the integer and fraction of a float's mantissa.</pre>
+
+			<div class="code">
+				<h3>Playing with Float/Double Precision</h3>
+				<ul>
+				<li>#include &lt;iostream&gt;</li>
+				<li>#include &lt;iomanip&gt;</li>
+				<li>int main()</li>
+				<li>{</li>
+				<li>&nbsp;&nbsp;float inc = 1.000001f;</li>
+				<li>&nbsp;&nbsp;double dInc = 1.00000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 1:       " << std::setprecision(30) << std::fixed << inc << " " << dInc << '\n';</li>
+				<li>&nbsp;&nbsp;inc = 10.000001f;</li>
+				<li>&nbsp;&nbsp;dInc = 10.00000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 10:     " << inc << " " << dInc << '\n';</li>
+
+				<li>&nbsp;&nbsp;inc = 100.000001f;</li>
+				<li>&nbsp;&nbsp;dInc = 100.00000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 100:   " << inc << " " << dInc << '\n';</li>
+				
+				<li>&nbsp;&nbsp;float inc = 1.00001f;</li>
+				<li>&nbsp;&nbsp;double dInc = 1.0000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 1:       " << std::setprecision(30) << std::fixed << inc << " " << dInc << '\n';</li>
+				<li>&nbsp;&nbsp;inc = 10.00001f;</li>
+				<li>&nbsp;&nbsp;dInc = 10.0000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 10:     " << inc << " " << dInc << '\n';</li>
+
+				<li>&nbsp;&nbsp;inc = 100.00001f;</li>
+				<li>&nbsp;&nbsp;dInc = 100.0000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 100:   " << inc << " " << dInc << '\n';</li>
+
+				<li>&nbsp;&nbsp;float inc = 1.0001f;</li>
+				<li>&nbsp;&nbsp;double dInc = 1.000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 1:       " << std::setprecision(30) << std::fixed << inc << " " << dInc << '\n';</li>
+				<li>&nbsp;&nbsp;inc = 10.0001f;</li>
+				<li>&nbsp;&nbsp;dInc = 10.000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 10:     " << inc << " " << dInc << '\n';</li>
+
+				<li>&nbsp;&nbsp;inc = 100.0001f;</li>
+				<li>&nbsp;&nbsp;dInc = 100.000000000001;</li>
+				<li>&nbsp;&nbsp;std::cout << "val with 100:   " << inc << " " << dInc << '\n';</li>
+
+				<li>&nbsp;&nbsp;return 0;</li>
+				<li>}</li>
+				</ul>
+			</div>
+
+<pre>Of course, with larger integers more unique MC values can be present. For instance, moving to 64-bits means 21-bit representation is available per-axis resulting in a total of approximately 2 million units of distinct MC values per axis, which cubed represents the total number of available MC values. Of course, this seems reasonable for a 64-bit machine, but because floats are the primary representation used in this system, 32-bit MC values are being preserved to allow for more objects to exist in system memory by halving the quantity of bits in a MC. For the complexity of the classification that represents an object in a model, the memory cost before paging from main to hard storage will vary. The point being that given enough data to represent one object, attempting to fill the 64-bit MC space might overrun commodity RAM capacities (though DDR5 presents a future with larger amounts of memory support even in commodity motherboards). Of course, 64-bit MC space can be used without overrunning memory if it is sparse. However, these are important considerations that can allow engineers to inductively outline the scope of environment to build in a virtual setting, and therefore can easily be calculated to understand what configuration makes the most sense for their projects.
+
+To increase the representation of space, a second coordinate system has been introduced to allow a modification to the scope of definable space while still using only 32-bit integers and floats to describe the space.
+</pre>
+
+			<pre><h2>Nesting Graphs</h2>
+The basic idea is two have a 1024 cubic bounded BVH nested within another BVH. However, because it is known that each BVH is only allowed to exist within 1024 unit bounds along each axis (given the prior premises of this system), the parent graph structure can easily be represented using integer values as each BVH can be defined within 1024 intervals from a starting origin. Using 32-bit MC values means that this uniform grid of sub BVHs - at every 1024 interval along each axis - can more easily ensure a unique location within a Z-order curve defined space occurs, and that every 512 units traveled from a starting origin defines a boundary between two potential BVHs.
+
+<em>Technically, the system can have overlapping spaces in this parent integer coordinate space, but the 512 integer unit boundaries describes the maximal usage of total space.</em>
+
+By having the parent coordinate system represented as integer values, the arithmetic behind representation of coordinates in the parent system is always exact when compared to floating-point representation. Furthermore, the representation of coordinates using integers is easily unconstrained to the representable space available because this value can either be bound by the available MC bits <strong>OR</strong> through controlled math can be represented by simple increments and decrements of 1 to switch between the BVH currently being observed. For simplicity, this system is currently using every 1024 units in integers to represent the location between BVHs (again to maximize space available), and it is still not constrained by the MC value because this value is 32-bits. Specifically, a coordinate in the parent space is of 32-bit signed integers, and the range of values in this representation exceed the possible number of unique MC values in a 32-bit unsigned integer. Therefore, every unique MC value can be hit – meaning there can exist <strong>1+ billion sets of BVHs nested within this parent BVH</strong>
+</pre>
+			<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://www.youtube.com/embed/qcXDPa4pSrQ" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Viewing an Entire BVH</p>
+			</div>
+<pre>The above video is meant to visually describe what the bisection of space looks like in a typical BVH. While not shown at scale, this distribution of space is effectively the same at the parent level which has nested BVHs, but what is in the video is just one single BVH pulled from the parent BVH. The primary difference is the BVH leaf nodes in the parent BVH structure has the leaf nodes distributed in a uniform manner at every 1024 units, but only if defined. The idea is that the amount of memory needed to represent the parent BVH structure is not required to exist for nodes in this uniform distribution of 1024 units if they are not needed. Something remarkably useful about the BVH structure is it can be sparse, so the child nodes of BVHs in the parent BVH structure need only exist if another representation of space is required to exist. The combination of uniformly distributing allowed BVHs in a parent BVH structure and no necessary need to require that a BVH child node exists within the uniform distribution means verification that BVHs are in allowed coordinates is straightforward, but also that memory can be saved if the space is not required to exist at some 1024-base units in the parent BVH.
+
+Just to note, by comparison, if the uniform space was required to describe child BVH nodes, then we would be dealing with a uniform grid which has constant time traversal. However, because the representation is sparse, only the amount of information relevant to a given sub-BVH is required to exist and means that the boundaries observed when traversing the parent BVH is variable - easily allowing for an observation of empty space between two adjacent BVHs to be recognized to eliminate unnecessary processing of data from a preliminary search. If, however, the parent structure used the constant traversal time of a uniform grid, then the sub-BVHs within the cells of the grid would still need to be observed to test for relevance when updating elements, running physics simulation, or for render culling.
+
+This choice in sparse but uniform distribution of allowed spatial occupancy means a simplification exists in traversing multiple trees of BVHs for relevant information, and further made implementation of updating the global coordinates for which an object is within easy to bound. This latter statement is on the basis of having the parent BVH be sparse, by doing so if an element crossed to the bounds of another BVH in the parent structure, then its parent coordinates become bound to that BVH origin within the integer coordinates of parent space. However, if this element leaves the 1024 bounds of a BVH sub-tree, but there are no adjacent BVH child nodes, then the element would not switch the parent coordinates it considers to be most relevant, and instead would start to accrue ever greater whole values in its local floating-point coordinates. As a result, the object can be forced to be limited to travel beyond certain boundaries where further empty space is present, and in the empty space likely need less floating-point precision anyway as no relational information with other separate elements would be present.
+
+To make this work with rendering, each element keeps track of the child BVH that it <em>belongs to</em>. These elements can be static, dynamic, or technically not <em>"owned"</em> by a BVH but still considered to be within the scope of that BVH for spatial coherency. The integer global coordinate is passed to shaders through unused uniform variable values and then deducted from the view position’s global coordinate to provide an offset for the object currently being rendered. This separation of integer coordinates in parent space, and local coordinates in a BVH, ensures that all elements in the scene graph can agnostically exist within their own representation of local 1024 bound float units, meaning the physics system would rarely process objects with less than 4 decimal units of fractional float representation and the same goes for vertex processing in the render pipeline as a smaller relative whole value is present when deducing the parent integer coordinates of an object against the raw integer coordinates that the view position is at in the parent coordinate system. This works by keeping track of two values for the view position, which child BVH position in parent space is the view currently within (found after crossing 512 units in parent space - i.e., the potential division boundary between child BVH nodes) and cycling the local view position between [-512,512] every time a 512 boundary in parent space is crossed. Cycling in this manner means that the local view position crossing over -512 on one axis will result in being at positive 512 along that axis for a new local space.</pre>
+			
+			<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://www.youtube.com/embed/HhTAbYDd7bs" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Traversing a BVH for Relevant Nodes</p>
+			</div>
+
+<pre><h2>Conclusion</h2>I have heard individual arguments over the merits of double over floats for fractional representation in software. However, even extending this scene graph seems to be sound for the needs of my generalized software to represent simulation and interactive event-driven experiences with suitable precision. With the ease of representing a parent space by integers, it becomes easy to consider a rabbit-hole of ever larger representable spaces available in one of two ways: by increasing the MC value in the parent graph, or by nesting each graph perpetually in another larger graph. I had this enhancement planned since 2019, but between my academic coursework and last year of research assistance in lab I was able to dissuade myself from such arbitrary scaling thoughts to just implement something that works. I may take time to allow for large spaces to exist, but something to consider even in this system is that the arbitrary units described between the parent and child graph already allow for variable representations of real-world space down to a desired precision. For instance, the current system could have one whole unit in local space (a child BVH node) represent one meter, resulting in 1048 kilometers of space per-axis within the total system, or if one unit represents 1 kilometer then the totaled allowed space becomes 3-orders of magnitude larger in a decimal representation yielding 1,048,576 kilometers of total available space to represent in the system.
+
+Ultimately, if higher precision is required to model a certain system, then understanding the representation of IEEE 754 floats and the desired unit scale of space could mean that preliminary calculations are viable to determine what the <strong><em>true requirements</em></strong> in spatial representation must be if the margins of precision are also known. As it stands, my current enhanced scene graph is set to an arbitrary scale for general-purposes I have in my mechanics and interactive simulations, but of course such software can and should be revised to produce a scene graph that is amenable to others' requirements when modeling in a system utilizing spatial occupancy.
+</pre>
+
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2022 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
