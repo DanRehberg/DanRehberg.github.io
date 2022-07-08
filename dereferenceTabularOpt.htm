@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="HPC, Memory, Complexity, Performance, Dereference, Dereferercning">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Specialized Optimizations</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="gridTrip.png" alt="Grid World Trip">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="about.htm">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>Colorado State University’s Computer Science program requires an interesting active learning course to graduate - referred to as CS 314: Software Engineering. This course offers students several benefits by emulating an internship at a software company - and it presents it in the guise of a fun occupation that young coders seem to have interest in: full-stack development. There was one strict requirement in the course, when making RESTful API requests from the client application to a server, <strong>we must ensure the request happens in less than 1 second</strong>. This article is mostly about how I went about optimizing the classic <emp>traveling salesman problem</emp> for my team’s product, with regard to understanding the cost of memory accesses.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Cost of Memory Dereferencing and Tabular Data Performance</h2>
+
+			<pre>A first note is that the instructor to this course requests that students do not share code from a past course - so, nothing in this writeup will contain code from the course but some C++ code is provided merely to demonstrate concepts in profiling performance.
+
+Some premises are important to understand the manner in which optimizations were performed. The final product is a trip planning app which allows users to build an itinerary of places to travel which provides a visual of a closed-loop trip (returning to the starting place following the last location in the trip) using <em>OpenStreetMaps</em>. Part of developing the product includes things like calculating trip distances - between locations and sums of distances - to display to the end user. An extension of this during one SCRUM interval is to incorporate a <strong>trip optimizer</strong>, which merely means reducing the total length of the trip. The baseline algorithm to implement is a <em>nearest neighbor search, <strong>which is O(n^3) complexity</strong></em>. We had two additional algorithms we could optionally integrate into the product, which are slightly more complicated than the bruteforce of the nearest neighbor variant, but would yield better optimizations in less time.
+
+This optimizations is entirely based on a serial version of <em>nearest neighbor</em>, where our final product was able to optimize a trip under the maximum load tested: <em>1000 places in the itinerary <strong>while still finishing the REST request in less than 1 second</strong></em>. As much as I love parallelism, the initial optimizations I was developing for the serial method were being built to then adopt into a parallel dispatch, but there became no need to do so after seeing the performance increase in the serial version; of course this could be extended to work even faster given a good approach to parallel dispatch of work.
+</pre>
+
+			<div class="figure">
+				<img src="shortTripCS314.png" alt="Reducing Trip Length in Full-Stack Project">
+				<p><strong>Figure</strong> 1000 places ~500 ms serial Nearest Neighbor shorten trip</p>
+			</div>
+
+			<h2>Introduction</h2>
+
+			<pre>The nearest neighbor algorithm specification required a few things that would prevent certain actions from pre-optimizing the server-side implementation - but some of which would not make a great deal of sense anyway. First, we had strict JSON schemas to adhere to so that every team’s backend was interoperable with each other’s frontend REST requests. With that, while some distances would have already been stored in the client-side itinerary from a previous distance API calculation server-request, we would not be able to upload this prior distance information when performing the nearest neighbor (<em>NN</em>) request. Of course, <em>this would not make sense as the NN starting criteria would include computing of all pairwise distances between locations, and the distances already computed would merely be one configuration of a linear arrangement (the starting itinerary order)</em>.
+
+The second important consideration is that no team should have accidentally chosen a worst-performing way to implement the NN algorithm. Our specification required that we start the NN process by precomputing all pairwise distances once so that no one takes the naive route of performing a distance calculation while iterating over the main portion of the NN algorithm.
+
+The NN algorithm is a simple iterative process: one place is the current focal location, search through the available places remaining and match it to the nearest of these locations, then the focal place becomes this nearest place and the algorithm repeats. The challenge in making the NN implementation performant becomes a question of cost within iterative behavior.
+</pre>
+
+			<h2>Iterative Behavior, a Unique Strength and Weakness of Computation</h2>
+<pre>A major goal in the course is to do what any real-world programming task should require: writing reusable, maintainable, and performant code. For writing performant code, it is important to ask what type of process is being implemented - in the case of NN we have an iterative algorithm.
+
+Iterative behavior is an emergent feature of branching computations, and this fundamental quality is a major reason why computation is so powerful. But there are certainly caveats to this as well. Firstly, writing maintainable code can be difficult depending on how the iterative behavior is implemented - some practices can lead to more esoteric concepts than others, as any starting student in recursive functions might understand. The second issue is understanding that there is likely a constant time cost to profile per single iteration of an iterative process/algorithm.
+
+The iterative cost is an important question when we have real-time constraints to adhere to for human computer interfaces and user experience criteria. The single iteration cost is not the issue alone, but becomes a problem as one complete execution of the algorithm requires N-iterations. This is the case because the O(1) complexity really means there is a N*O(1) cost, which will resemble an O(N) process.
+</pre>
+			<h2>Analyzing the Nearest Neighbor Costs</h2>
+			<h3>The Distance Computation</h3>
+			<pre>To start, our NN algorithm will be using our distance calculation code we built earlier in the course for determining a distance between two places on the globe. This implementation was already optimized following the requirement to implement the Vincenty formula. There are at least two things worth mentioning briefly here as I was surprised to see other team’s servers taking significantly longer than our own for just making a REST request for the itinerary distance calculations.
+
+Firstly, a function implementing this formula will be invoked up to N^2 times to precompute a table of distances between all pairwise permutations of places when running the NN algorithm. Secondly, there are obvious redundancies in the formula that should can easily be acknowledged without committing the horror of <em>pre-optimizing</em>. I bring up some of this because what I thought was obvious might not have been the case for other teams in this course. Because of interoperability between servers, I was able to compare general distance API requests as well as the shorten trip API request to see how my team’s implementation compared to everyone else’s - helping form a baseline of how we are doing on server performance knowing that everyone shared the same remote machine for the server (i.e., hardware was static so there is potential for parity between teams’ server code implementation).
+
+Without seeing everyone’s code, I cannot make a definite statement on why other teams’ apps performed worse with the distance API request. However, I am inferring that the formula was not efficiently converted to a computational language despite having characteristics that can be spotted to describe how to best translate the formula. The most notable is that trigonometric functions are transcendental and typically more costly than other functions because they can also be iterative - representing a finite Taylor sum to offer a trig ratio to some known degree of precision. Several of the trig functions in the formula are duplicate operations, which suggest that information can be stored within the local scope which can be reused without needing to invoke the same trigonometric operation multiple times.
+
+Moreover, instantiating local values of the unique set of trig invocations helps make the code more readable. If one were to observe the Vincenty formula on Wikipedia, and write this all in one line of code, then it would be abysmally difficult to actually parse as a human reader. The elegance is not the same between the syntax and structure of different languages - in this case the mathematical representation and a high-level human-readable programming language.
+
+It might seem clear, but for emphasis it might be useful to explicitly state the cost in this problem. As an arbitrary exercise, I went ahead and wrote this code in Visual Studio and disabled optimizations to ensure the compiler did not perform the operation once at compile time and call it a day.
+</pre>
+
+			<div class="code">
+				<h3>Trig Lookup Cost</h3>
+				<ul>
+				<li>#include &lt;iostream&gt;</li>
+				<li>#include &lt;chrono&gt;</li>
+				<li>...</li>
+				<li>&nbsp;float a = 5.0f;</li>
+				<li>&nbsp;float angle = 0.887;</li>
+				<li>&nbsp;float cosResult;</li>
+				<li>&nbsp;int iters;</li>
+				<li>&nbsp;std::cin >> iters;</li>
+				<li>&nbsp;if (iters <= 0)return</li>
+				<li>&nbsp;startTime = std::chrono::steady_clock::now();</li>
+				<li>&nbsp;for (int i = 0; i < iters; ++i)</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;a *= a;</li>
+				<li>&nbsp;delta = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - startTime).count();</li>
+				<li>&nbsp;std::cout << "Multiplication " << iters << " times took " << delta << " microseconds, or about " << (float(delta) / float(iters)) << " microseconds per multiplication\n";</li>
+				<li>&nbsp;startTime = std::chrono::steady_clock::now();</li>
+				<li>&nbsp;for (int i = 0; i < iters; ++i)</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;cosResult = cos(angle);</li>
+				<li>&nbsp;delta = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - startTime).count();</li>
+				<li>&nbsp;std::cout << "Cosine " << iters << " times took " << delta << " microseconds, or about " << (float(delta) / float(iters)) << " microseconds per cosine call\n";</li>
+				</ul>
+			</div>
+
+<pre>I input one million from the console and between several executions got common results (note, this code is after warm starting the system with some other parallelism benchmarking within the same application - mileage might vary on the readiness of your system if you replicate this) which was 2879 microseconds for multiplications of a float - being about 2.879 nanoseconds per multiplication - and 16524 microseconds for calling the cosine function - being about 16.524 nanoseconds per cosine call. So, this cosine took an order of magnitude longer to perform. Assuming each arithmetic operation is the same as this multiplication result and each trig call is the same as this cosine result, then it might be a little more clear why redundant trig calls could be noticeable when profiling the execution of an iterative algorithm; because all of the extra time in one iteration will sum to extra cost across N total iterations (saying epsilon extra cost of one iteration means a total of N*epsilon extra cost from all iterations).
+
+Again, while I am inferring that this might be why the other teams’ distance requests were slow, it might have been any number of infinite implementation routes they took. Whatever the case may be, I was surprised to see this performance loss in the other distance API requests, and would implore people to consider differences in semantics to better convert from one language to another for clarity, logical equivalence, and performance - especially in this scenario where a performance benefit will emerge from clean code writing practices.
+</pre>
+
+			<h3>Containers</h3>
+
+			<pre>Assuming the distance function is already written, the next costs to consider in the NN algorithm are implementation aspects that can be configured by a programmer. That is, some logical structures must exist, but they can be reduced down to a minimal form - such as stating that for the focal place, all other available places must be iterated over to find the one with the shortest distance to this focal place. We cannot change that process because it achieves what the NN algorithm is supposed to do, but we can change certain aspects of the implementation to speed up the execution of the algorithm based on fundamental qualities of computers.
+
+Regarding some things that cannot be avoided: we must test whether or not a location has already been paired to another place because we cannot reuse locations. The obvious reason is a corner case when starting with place A, then always stating its best pair was itself because the distance is zero - causing an indefinite loop. We would not be using a dynamic container to manage this process because the extra operations would mean additional memory modifications which have a lifetime of orders of magnitude difference in time as we go through the system memory hierarchy: L caches, RAM, long-term storage. So, all implementations utilized basic arrays which could incur a single RAM look-up cost in dereferencing an address.
+
+Minimizing to basic arrays as a container demonstrates that our concerns for performant execution are likely going to be based on memory accesses more than computations, but there is an obvious minimization we can make to computations.
+</pre>
+
+			<h2> Fewer Calculations and Memory Accesses</h2>
+			<h3>Half a Table</h3>
+			<pre>The spec told us to precompute a NxN table of distances, but changing the order of a pair would not yield a different distance. Therefore, we can get away with only computing half of the table. When viewed as a matrix, this means filling in the upper or lower triangle.
+
+Starting with a 2D array for this table will require a coherent look-up method if only half of the table is built. However, this is easy enough to do: <em>it just means that we need to access the first and second indices in a repeatable manner; <strong>in this case I chose having lower values always be the first index and the large value be the second index</strong></em>. It might be questioned, <em>”Why not go ahead and store the single calculation to 2 locations within the distance table?”</em> The response to this is again, one of the areas we have control over to promote performance is memory accesses - by storing the value only once, we are avoiding two additional memory dereferences (from the first and second index lookups, respectively).
+
+There are a few different ways to ensure that table values would be looked up following the coherency pattern I chose: the easiest implementation is to add a simple test to swap the indices to ensure the first is less than the second, but I chose another route so that the order was always correct. Instead of one for loop over N elements, I have it split in two. This is in consideration of the overall complexity of NN. If we always started with a single location, then the algorithm is O(N^2), but because starting with a different location might alter the final optimized trip, we need to consider iterating over all possible starting locations - yielding our originally stated O(N^3) complexity. Ultimately, so we do not need to recompute our distance table, all of the information we used is by the original index value of a location from the array passed through a JSON string to the server. So, when we iterate over different starting locations, we are just effectively incrementing the index from the original array to use as the starting location. Once we are actually performing our N^2 comparisons in NN, we could just loop over all N indices and follow our implemented rules to skip over repeated locations, but to keep the index order coherent the two for loops I instead use is first: <strong>for i := startingIndex; i < N; ++i</strong> and secondly <strong>for i := 0; i < startingIndex; ++i</strong>
+
+This might seem esoteric, but it was also the implementation chosen when organizing the final new itinerary back to the client - <strong>adhering to the specification which asserted that the starting itinerary place needed to be preserved for the end-user</strong>. The esoteric nature would be less about understanding how this still achieves looping over N elements, and more that it requires interpreting why this approach was taken. Even so, I would argue including the process in a few locations would make the iterative behavior easier to understand throughout the Java class that is performing the NN optimization.
+</pre>
+			<h3>Half the Dereferences</h3>
+			<pre>While we effectively build a table with only half its elements because it is mirrored over its diagonal, we aren’t really gaining much more in performance when iterating inside the NN algorithm because generating the table is a one-time cost to starting the shorten trip API request. However, the size of the table is static, and I asserted a coherent pattern for dereferencing the tabular data with its two indices.
+
+The final optimization profiled was therefore flattening the 2D table into a 1D array, and taking the time to calculate the flattened index to a corresponding pair of places. Keeping the size of the array as a square of the number of places (<em>therefore still NxN in memory</em>) ensures this flattening process works correctly.
+
+The basic 2D flattening is simply using index i, j, and the number of elements N in the table. The computation is <em><strong>i + j * N</strong></em>. This is where a real performance gain could be seen between iterations - because only one look-up becomes required to find a distance between two elements rather than the previous two dereferences. Halving the number of dereferences cut back on execution cost to really see some performance gains at large N for place counts in the NN algorithm execution - even against the extra overhead in networking to send the information to the server to begin with.
+</pre>
+
+			<h2>Conclusion</h2>
+			<pre>The final implementation in our application offered a highly performant execution of the nearest neighbor algorithm for pairwise elements. Of course, given the cost observed with dereferencing data, it would be a reasonable hypothesis (or inductive proof) that additional tuples of higher dimensional nearest neighbor table look-ups should also benefit from performing a flattened approach to ultimately perform some integer arithmetic rather than N dereferences in an N-dimensional scenario.
+
+While the implementation did not clear all N^3 tests for the maximum 1000 places, it would guarantee at least one full pass to provide a shortened trip solution using nearest neighbor. When observing other team’s implementations at 1000 places - it was obvious when some implemented other algorithms because the final routes aligned more with results that would not be found under NN unless all N^3 tests were performed. However, those results were found to run slower, and several other teams that presumably only implement NN as well offered either no shortened trip (conservatively ending the algorithm under the 1 second constraint before a single NN solution was found), or went over the 1 second time frame suggesting conservate cost margins (like from the communication setup and transmission overhead) might have been set too low.
+
+In all, if more time were available, I would be interested in having implemented the parallel version of our optimized NN algorithm. Additionally profiling would help determine where to reduce the time complexity of the original O(N^3) task. It could be that the starting index variations could be executed in parallel - where ideally N threads worked on each O(N^2) execution to reduce this to a O(N^2) complexity - or to perform the N distance look-ups in parallel - where again an ideal situation exists of N threads reducing complexity to O(N^2). An inductive guess as to what might perform better might consider which has better caching potential to avoid needing to reload instructions for separate program counters, and consideration of what scenarios require synchronization to determine if the synchronization cost is an affliction or promoting feature of performance. E.g., more mutual exclusion cases might emerge if threads must sync testing shortest distance to a focal point, compared to testing shortest trip solution - but having threads build out their own shortest trip solution will require additional memory and mutual exclusion to exchange a better itinerary when finding its total distance is shorter than the previous optimal route.
+</pre>
+
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2020-2022 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
