@@ -27,7 +27,7 @@
 				<a href="projects.htm">Projects</a>
 			</li>
 			<li>
-				<a href="#">About</a>
+				<a href="about.htm">About</a>
 			</li>
 		</ul>
 		</div>
@@ -76,9 +76,22 @@ C++ and CUDA were used throughout all of the trials. The software was run on an 
 				<p><strong>Figure C</strong> Sphere of 242 vertices</p>
 			</div>
 			<pre><h2>Methods</h2>
-Times were calculated from the moment of dispatching a set of work to the work being completed but excluded the initialization time for each parallel environment. The time taken to setup each environment seemingly took milliseconds between getting CUDA ready and creating threads on the CPU; but focus was given to the time to dispatch and complete a series of tasks because once initialized several dispatches can take place during runtime without requiring the initial setup time to occur again. The CPU dispatch model was created for these tests and ensures threads are created once and sustained through the life of the program by keeping each thread in spinlock between work. Upon first running a CUDA kernel after a system boot, an increase in time was apparent only in the first dispatch run. This was considered an aspect of initialization time and was excluded from trial results.
+Times were calculated from the moment of dispatching a set of work to the work being completed but excluded the initialization time for each parallel environment. The time taken to setup each environment seemingly took milliseconds between getting CUDA ready and creating threads on the CPU; but focus was given to the time to dispatch and complete a series of tasks because once initialized several dispatches can take place during runtime without requiring the initial setup time to occur again. The CPU dispatch model was created for these tests and ensures threads are created once and sustained through the life of the program by keeping each thread in spinlock between work. Upon first running a CUDA kernel after a system boot, an increase in time was apparent only in the first dispatch run. This was considered an aspect of initialization time and was excluded from trial results.</pre>
+			<div class="code">
+				<h3>CPU Thread Behavior</h3>
+				<ul>
+				<li>if all threads arrived notify parent thread</li>
+				<li>spinlock until told to start</li>
+				<li>N := divided tasks</li>
+				<li>for i to N</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;job(i)</li>
+				<li>end for</li>
+				<li>if all threads arrived notify parent thread</li>
+				<li>spinlock until told to reset</li>
+				</ul>
+			</div>
 
-Each test involved performing a specific job N times - described here as tasks. For each test, seven trials were performed to observe behavior after increasing the number of tasks. The tasks count started at 3 for the first trial and scaled by ten for each subsequent trial concluding at a final task count of 3 million. Each trial was performed 10 times within the same runtime execution, the results of which were averaged. Each test was designed to be embarrassingly parallel so that threads could work independently without worrying about race conditions affecting results from a dispatch.
+			<pre>Each test involved performing a specific job N times - described here as tasks. For each test, seven trials were performed to observe behavior after increasing the number of tasks. The tasks count started at 3 for the first trial and scaled by ten for each subsequent trial concluding at a final task count of 3 million. Each trial was performed 10 times within the same runtime execution, the results of which were averaged. Each test was designed to be embarrassingly parallel so that threads could work independently without worrying about race conditions affecting results from a dispatch.
 
 A baseline of dispatch performance was gathered by first running the GPU and CPU thread systems through a simple workload of two data type casts and a single integer modulus operation.</pre>
 
