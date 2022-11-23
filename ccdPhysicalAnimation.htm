@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<title>Breadth of Programming</title>
+	<link rel="stylesheet" type="text/css" href="elementFormatStyle.css">
+	<meta charset="UTF-8">
+	<meta name="keywords" content="Rigid body dynamics, Inverse Kinematics, Physically based animations, Animations">
+</head>
+<body>
+	<header id="header">
+		<div class="content">
+			<img src="profile.jpg" alt="Dan Rehberg">
+			<h1>Portfolio: Animation Programming</h1>
+		</div>
+	</header>
+	<section id="overview">
+		<div class="content">
+		<img src="fenceVault.png" alt="Character Vaulting over a Fence">
+		</div>
+	</section>
+	<nav id="navigation">
+		<div class="content">
+		<ul>
+			<li>
+				<a href="index.htm">Home</a>
+			</li>
+			<li>
+				<a href="projects.htm">Projects</a>
+			</li>
+			<li>
+				<a href="about.htm">About</a>
+			</li>
+		</ul>
+		</div>
+	</nav>
+	<div class="clear"></div>
+	
+	<aside id="sidebar">
+		<p>This discusses an approach to Physically-based Animations for animated armatures by using an IK pose to set a target for differential equations of motion to try and achieve.</p>
+	</aside>
+	<section id="mainContent">
+		<div class="writeup">
+			<h2>Example of Physically-based Animations</h2>
+			<pre><h2>Introduction</h2>
+
+When moving armatures around in a virtual world, it must be considered what logical mechanisms are going to control this motion. Of course, with <strong>Mechanics</strong> we can easily employ centuries old concepts from the evolution of Newton to Euler, and use <em>Integral Calculus</em> to assert displacement over time, but armatures are complicated. Not only can armatures have a large sequence of limbs, but typically a specific set of motions are desired to determine the current state of the armature. This is to say, a configuration of the system is desired which differs from simple mechanics simulation. In Mechanics, we merely assert what the next state is of an element in a configuration space by time integration, but we might have a subset of a configuration space for armatures in which we assert a desired consideration before any mechanical simulation occurs.
+
+A discrete collision system is also likely to have similar coherency between contact points but tries to avoid any initial jitter when applying impulses between a pair of bodies by using an immediately stable contact manifold as soon as the collision occurs, changing as needed for each subsequent frame. With continuous collisions, there do exist means to avoid a few frames where a rigid body jitters after a collision, but an approach demonstrated in the video above was an attempt to take a speculative approach with continuous collision detection in order to provide position corrections as well. The goal of applying position correction was to further reduce jitter in a continuous system by not applying an additional bias to the impulse – added energy meant to force a separation between contact points. Moreover, this simulation does not use an iterative solver (e.g. Gauss-Seidel) and yields only one Lagrangian scalar per contact pair in each collision pass, without any warm starting from a previous frame’s solution.
+
+<h2>Background</h2>
+
+For interactive simulation, and general computer representation, controlled animation capabilities are typically classified into two categories. These categories then have a subset of implementations (methods) for either performance or generalizable reasons.
+These are <em>Forward</em> and <em>Reverse</em> <strong>Kinematics</strong>.
+
+In Forward Kinematics, we effectively know (or can find out) the configuration of an armature. In robotics terms, we can compute the <em>end effector</em> of a serial chain of limbs located on the armature – including as a subclass of the armature. The <em>end effector</em> can be thought of as the position on the end of a series of limbs which is going to interact within the armatures configuration space, or that of the larger mechanical system. For instance, hands are common end effectors because they are extended out to a point in space to interact with objects – say grabbing a doorknob. In Forward Kinematics, or we can say here “forward animations,” we know <strong>both</strong> <em>where the end effector is and the series of limb states that have the end effector in its current state</em>.
+
+<em>State per limb is just a transformation within the configuration space that asserts a limbs position and orientation (for instance)</em>. And end effector is of course dependent on the series of transformations of parented limbs within an armature. For instance, the hand is attached to the radius/ulna, which is attached to the humerus, and ultimately these limbs are parented to a body’s inertial frame. So, with Forward Kinematics, we have the record of transformations (from the root transform of the body down to the end effector) to be able to calculate the final state of an armature at a given time.
+
+Inverse Kinematics is the problem of having an end effector, knowing where we want it, but not knowing the configuration of transformations that result in the desired configuration. This poses a challenge if a desire of mechanically driven animations are to be presented.
+
+In an interactive virtual world, we can technically precompute animations in a set of modeling tools that represent a realistic motion of a character. These motion states can be saved as keyframes to a given animation and then used within a game to define the configuration of an armature at any given moment. This means animations are not required to be dynamic – i.e., simulated during runtime with time integration per limb. Forward animations can still be considered a time differential, but the change by time is known immediately and does not really need integration in a calculus sense. Instead, time for forward kinematics represents an argument to a parametric representation of state – current state is f(t) -> mapping to a set of positions and quaternions per limb. Inverse kinematics does not have a parametric mapping to a configuration, and requires an additional step to figure out how much to move each parented limb to get an end effector to a goal position. This latter concern might unintentionally ease someone into the mindset that this is the way to yield physically-based animations alone, but more on that to follow.
+
+
+<h2>Premises</h2>
+
+Before going over how I have implemented physically-based animations – animations where the limbs for a character are tied to the entire physics engine – a few pieces of information are worth noting.
+
+First, we need to know the desired configuration of limbs to be able to animate an armature to a final goal state.
+
+Second, the animation state variables can simply be position and orientation if the starting configuration of an armature already has all limbs – with their local coordinate systems – aligned relative to their respective parent limb in a coherent fashion (e.g., hand is correctly connected to forearm, forearm to humerus, etc..). Moreover, if there are no prismatic joints, then it is entirely sufficient to just use rotations to describe a state change of the armature.
+
+And third, it is worth pointing out that a manner of physically-based animations are not necessarily tied to Forward of Inverse animation methods. Notably, if Forward animations mean we know what state a series of limbs must be in to achieve a desired global armature state, then we do not have to directly apply the rotation and position in one go to immediately achieve this goal.
+
+To the third point, keyframes can be applied to a limb based on a current time alone – i.e., map the current time to a single keyframe and apply the rotations and positions to each limb, respectively. Or, interpolation can be applied between keyframes to generate additional information dynamically across time (in the event of a time fraction between two keyframe mappings). This would mean looking at a current keyframe and the next keyframe, and blending the current by the next by how close the time is to either (typically a linear interpolation). However, nothing really asserts that we must apply forward animations in a direct fashion. Instead, we could say: we know how to get the armature to a desired state, and if we know how much acceleration can be applied by each limb to enact a state change, then we could just integrate the internal muscular Force/Torque of the limb to accelerate it to the goal configuration.
+
+Now, there are some things to consider about why to <strong>not do this for forward kinematics</strong>. Firstly, if the armature’s limbs are not going to experience external Forces, then ultimately the animations generated by such a system might always result in indistinguishable kinematic motions when repeatedly performing the same animation action. If that is the case, then building this mechanics-based motion of armature limbs could be precomputed in animation/modeling software to generate keyframes that already appear to show animations where inertia of limbs is involved. Secondly, the end effector state is not modifiable in a meaningful way. If the final animation state is always the same, then an armature animated in this mechanical forward kinematic way is not going to interact with the environment in a generalized meaningful way. For instance, ground topology might vary, but if the effort and computation cycles are added to integrate per limb motion into an armature to lead to a final state, then the results of motion are not going to clearly indicate how a walking biped (for instance) consistently propels their center of mass forward as they are animated. We could start to employ some hackery to try to get the system to be more dynamic, say adding external forces to the end effector to start to push it to new dynamic goals, but we start to end up in a more complicated scenario as we then must consider how those Forces back propagate to parented limbs. This latter problem is the Inverse Kinematics problem, so instead let’s just start from there.
+
+The final premise, given a set of limbs that only rotate, and are co-located relative to their parented limbs in a coherent fashion, we can define a desired dynamic armature configuration to place an end effector to a goal position, and then integrate accelerations by internal Torques to those limbs to animate the armature to this desired goal position.
+
+This does not get into the concern of joint constraints, but that is discussed below in consideration of solving for an Inverse Kinematics (henceforth, IK) problem.
+
+
+<h2>Cyclic Coordinate Descent</h2>
+
+Among the various options to solve an IK problem, I chose to use <em>Cyclic Coordinate Descent (CCD)</em> for determining a given configuration of an armature to put the limbs in a desired pose. Before describing how CCD works, an argument for why it was chosen in this scenario can be provided.
+
+<h3>IK Solution Options</h3>
+
+Of options available, the physics engine I was implemented the physically-based animations in used a generalized constraint solver – applying the classical Jacobian between two bodies to compute the Lagrangian scalar to determine what impulses to apply to each respective body in the constraint pair. Using this system, IK problems can actually be solved through the Jacobian approach. This means that integration of motion could be applied to limbs, then the constraints between limbs (say rotation constraints) as well as environmental constraints could be appended to the system of constraints that need to be solved for at the end of a logic loop (just before rendering the elements in the scene). This would work effectively, but it also adds to the complexity of the system to solve for.
+
+Notably, the physics engine I was working in behaves different than generalized impulse-based dynamics simulation – I solve for time of events to determine the correct end of frame configuration of objects in a scene (i.e., determine what their rotation/orientation is before the constraint system), and then apply impulses at those time-based events. With this in mind, it would be excessive to consider internal joint constraints as a problem compounding the difficulty of a contemporary Jacobian system – which requires some number of iterations over the problem set (system to solve) in order to converge to a global solution. Instead, CCD allows us to isolate the problem we are solving from the general constraint system. This was appealing because presumably an agent with self-awareness would use their learned understanding of interacting with the world to solve this local problem as they are working in a global system – with finesse and not just random integration of motion per limb.
+
+<h3>How CCD Works</h3>
+
+So, CCD allows us to solve for a desired armature configuration – finding the IK solution – from which we can then consider how much Torque to integrate per limb to move towards that position. This is done on a per-frame basis so that influences on the armature can be accounted for with ease (e.g., external forces pushing a character away from the desired configuration might require an entirely new IK solution).
+
+With just rotations, CCD works by optimizing the greatest radial influences in descending order to align the end effector with its goal position. For instance, the entire length of an arm with a hand, forearm, and upper arm will have the largest range of motion to position the hand in space when rotated about the upper arm’s joint location (at a shoulder). This is because the sum of lengths along each joint is greatest at the root of the armature.
+
+The idea is then simple, we start at the root joint, find an optimal rotation to move the end effector as close to the goal as possible, then move onto the next child limb and repeat this process. For the above arm example this explicitly looks like: rotate upper arm, then rotate forearm, then rotate hand. If these rotations are not enough to build the desired armature configuration, then the entire problem can be repeated until no additional progress is made to get the end effector to the goal (simple distance comparison test). However, because we might already be (and in this scenario I was) finding a desired goal per-frame, we can instead just iterate over the limbs once in a given frame and let a temporal perspective allow us to consider that we do not need the solution in a macroscopic space over miniscule time durations (e.g., if it takes n seconds to move limbs to a goal, then having incremental IK solutions at some fraction of n is likely acceptable). That is, we can increment to the final configuration both by one iteration of CCD as well as one time integration per frame.
+
+So, CCD has us start at a root node and descend to the end effector, but how does the optimization per limb rotation work. Well, if we rotate a parent limb, then we know all of its descendants will also rotate with the parent limb. Therefore, the optimal rotation made is the angle required to align two vectors, the vector from the current limb’s joint position to the end effector and the vector of the current joint position to the goal position. These two vectors form a nice triangle, where the angle we want to apply to the joint is merely the adjacent angle between the two vectors. The problem becomes a trivial geometric relationship of vectors, or a transcendental function look-up (trigonometry) – pick you flavor (I prefer the basic vector/geometric relationships).
+
+<h3>Joint Constraints</h3>
+
+There is a problem with merely applying this angular change outright to the limb being updated in CCD – what if the limb has limited mobility. Again, the problem I am solving is exclusively of rotational joints, so no distance constraint for prismatic action is considered. So, we need to know how much of a rotation is allowed to apply.
+
+This gets a little complicated given the type of IK problem we are solving. In 2D space, this is not too challenging because a rotation only happens along an orthogonal axis to the planar configuration space, but in 3D we have 3D planar surfaces to consider (that are orthogonal) and because these spaces are applied to limbs, they are transformed from their local basis to a shared configuration space. This challenge is posed by how we choose to apply the rotation to a limb in CCD – in my system, I chose to find the orthogonal axis between the two incident vectors (joint to end effector and joint to goal position) to rotate about, and therefore produce a rather arbitrary quaternion as a result.
+
+Luckily, we can actually do a lot with quaternions, including decompose them into constituent parts. In particular, if we know what x, y, and z rotations are allowed from a limb’s original basis configuration, then we can decompose a quaternion into three rotations aligned with the x, y, and z bases axes. This process is <em>Swing-twist Decomposition</em>. 
+
+Therefore, to consider rotational constraints when applying a rotation from a CCD step, we can decompose the ideal rotation into 3 rotations, clamp each rotation by the bounds for a joint, and then recombine the rotation through quaternion multiplication to yield an allowed rotation from the ideal solution.
+
+
+<h2>Results</h2>
+
+Some results are presented that show different use cases of CCD and the time integration of Torques based on a frame’s CCD solution.
+First example merely demonstrates the CCD solution in action without any consideration of joint constraints, and no time integrations – i.e., the limbs are moved explicitly to the found ideal solution in a given frame. This helps indicate that CCD would otherwise requires iterations to solve for a final IK solution.
+</pre>
+
+<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1eM5IwNds8Aa2O6bwU3LLXR8qH7pynmKT/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Initial IK Test</p>
+		</div>
+
+<pre>
+The second example shows how the number of problems can be independent of one another. Here we have to physically-based animation problems being solved: getting the right rand onto the character’s hip and having the left hand wave back and forth (where it changes the goal position of the left hand after successfully swaying to one side).
+</pre>
+
+<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1HJJtMZ62kg-zoz9FAELkB_gTlVysvtZm/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Waving Humanoid</p>
+		</div>
+
+<pre>
+The next example demonstrates using this animation approach to have a walking biped. To note, there is no friction present in this scene, so the character walks in place but still pushes off the floor as they are animated. This animation here looks funny because the goal positions per foot are solely based on local coordinates, but for more accuracy should be based on the global ideal position to place the foot (which would adapt based on variable topological surfaces). This is working only in the local space because the limb’s exist within the character’s local coordinate system, and so are updated within this local configuration space before being transformed into global space (by the singular global transform).
+</pre>
+
+<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1HNl0x44wqskLIupgnTPFBt04nq1rqHLx/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Walking Character</p>
+		</div>
+
+<pre>
+This example is of a simple IK structure to solve, a snake-like creature where the series of limbs involved are trivial. This character shows setting a goal position by a global coordinate – in this case, the position of a humanoid to strike. This character has no constraints to apply.
+</pre>
+
+<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/1GJ8ZVoc8rtm_EkeZUiND67_-aYD7ViPL/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Water Serpent</p>
+		</div>
+
+<pre>
+The final example shows the full set of features with this physically-based animation. This character is vaulting over a fence, and switches from a Forward animation (interpolated) to the IK physically-based animation to perform the vault, and when the vault state is achieved switches back to a Forward animation state. This transition looks abrupt in smaller time steps (slow motion), but appears more fluid in the intended real-time. Of course, if all animations in this demonstration used the same physically-base animation system, then the results would be more coherent as it limits the amount of motion a limb can have by a time differential. When the IK state takes over, the following happens: a global goal position on the fence is found for the end effector (on the hand) to reach for; an upward force is applied to the character as they reach for the fence, once the fence is reached a Force is applied to the entire character as the arm pulls the character towards the fence, and once the character has passed the fence the vault action is considered achieved and the limb animations go back to forward animations while preserving whole body momentum gained in the vaulting process.
+</pre>
+
+<div class="presentation">
+			<div class="videoContainer">
+				<iframe src="https://drive.google.com/file/d/13K5XdwOf6njLD_v24ME4iIdr0G-BXPec/preview" allowfullscreen="true">
+				</iframe>
+			</div>
+			<p>Vaulting Character</p>
+		</div>
+
+<pre>
+In this demonstration environment, there is a bit more going on to engage the vault, and there is an entirely separate physically-based animation state that occurs if the vault action is attempted without satisfying all of the vault requirements. Notably, the button press to engage the vault requires the character to be within some bounds of the fence, and requires the character to be moving at a faster enough pace such that applying the upward Force with the forward velocity will land the character on the other side of the fence. Otherwise, if the character is moving to slow, the second safe animation state occurs of having the character climb their way up the fence. This is to say, the projectile motion elements involved are known a priori to tailor a gameplay experience where vaulting would not fail – ensuring a fluid experience for the end user. The fallback to the climbing case is suitable because there are less urgent time constraints to achieve the goal – the goal being to stand on top of the climbed surface. In fact, the climbing physical-based animation state is arbitrarily applied to a range of surfaces, those too short or too tall to vault over (where vaulting considers the additional influence of the arm to help pull the character passed the object they are jumping over). In that, these experiences can be tailored for user experience, but could also be open to constant physically-based animations like those found in the Euphoria engine (employed in Rockstar games since GTA 4).
+
+
+<h2>Summary</h2>
+
+In closing, there are a multitude of factors to consider if attempting to achieve physically-based animations. It is prudent to consider the Physics system employed in the virtual world, whether dynamic armature configurations (varying ways the end effector reaches a goal) is necessary, and finally how to adhere to joint constraints for an armature that is having time differential changes applied to its limbs.
+			</pre>
+		</div>
+	</section>
+
+	<div class="clear"></div>
+
+	<footer id="footer">
+		<p>Copyright &copy; 2022 Daniel Rehberg All Rights Reserved</p>
+	</footer>
+</body>
+</html>
